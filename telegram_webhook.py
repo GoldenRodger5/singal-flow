@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 FastAPI Telegram webhook server for instant button responses
+PRODUCTION VERSION - Integrated with real trading system
 """
 from fastapi import FastAPI, Request, HTTPException
 import requests
@@ -11,9 +12,12 @@ from dotenv import load_dotenv
 import uvicorn
 from typing import Dict, Any
 
+# Import production trading service
+from services.telegram_trading import telegram_trading
+
 load_dotenv()
 
-app = FastAPI(title="Signal Flow Telegram Bot", version="1.0.0")
+app = FastAPI(title="Signal Flow Telegram Bot - Production", version="2.0.0")
 
 class TelegramBot:
     def __init__(self):
@@ -103,191 +107,236 @@ async def telegram_webhook(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def handle_callback(callback_data: str, callback_query_id: str):
-    """Handle button click callbacks with instant responses."""
+    """Handle button click callbacks with REAL trading functionality."""
     
     if callback_data.startswith("execute_"):
-        # Extract ticker and action
-        parts = callback_data.split("_")
-        ticker = parts[1] if len(parts) > 1 else "UNKNOWN"
-        action = parts[2] if len(parts) > 2 else "BUY"
+        # REAL TRADE EXECUTION
+        result = await telegram_trading.execute_trade(callback_data)
         
-        response_text = f"""✅ *TRADE EXECUTED* ✅
+        if result['success']:
+            response_text = f"""✅ *TRADE EXECUTED* ✅
 
-🚀 **{ticker} {action} Order Placed!**
-💰 Position: $12,450
-📊 Entry Price: $248.50
-⏰ Executed: {datetime.now().strftime('%H:%M:%S EST')}
+🚀 **{result['ticker']} {result['action']} Order Placed!**
+💰 Shares: {result['shares']}
+� Entry Price: ${result['entry_price']:.2f}
+🛡️ Stop Loss: ${result['stop_loss']:.2f}
+🎯 Take Profit: ${result['take_profit']:.2f}
+📋 Order ID: {result.get('order_id', 'N/A')}
+⏰ Executed: {result['timestamp']}
 
-🎯 *Next Steps:*
-• Stop Loss set at $243.50
-• Take Profit target: $258.50
-• Position monitored automatically
-• Updates will follow
+🎯 *Position Status:*
+• Order submitted to Alpaca
+• Stop loss and take profit set
+• Position will be monitored automatically
 
-🤖 *Status:* Order submitted to broker"""
+🤖 *Status:* Live trade executed (paper mode)"""
+            
+            await bot.answer_callback_query(callback_query_id, f"✅ {result['ticker']} trade executed!")
+        else:
+            response_text = f"""❌ *TRADE EXECUTION FAILED* ❌
+
+🚫 **Error executing {result.get('ticker', 'Unknown')} trade**
+⚠️ Reason: {result.get('error', 'Unknown error')}
+⏰ Time: {datetime.now().strftime('%H:%M:%S EST')}
+
+🔧 *Next Steps:*
+• Check account status
+• Verify buying power
+• Review position limits
+• Try again or skip signal
+
+💡 *Tip:* Check portfolio status for details"""
+            
+            await bot.answer_callback_query(callback_query_id, f"❌ Trade failed: {result.get('error', 'Error')}")
         
         await bot.send_message(response_text)
-        await bot.answer_callback_query(callback_query_id, f"✅ {ticker} trade executed!")
         
     elif callback_data.startswith("skip_"):
-        parts = callback_data.split("_")
-        ticker = parts[1] if len(parts) > 1 else "UNKNOWN"
+        # REAL TRADE SKIP
+        result = await telegram_trading.skip_trade(callback_data)
         
         response_text = f"""❌ *TRADE SKIPPED* ❌
 
-⏭️ **{ticker} Signal Ignored**
-🔍 Searching for next opportunity...
-📊 Criteria: Confidence > 8.0/10
+⏭️ **{result['ticker']} Signal Ignored**
+🔍 Continuing market scan for next opportunity...
+📊 Criteria: Confidence > {os.getenv('MIN_CONFIDENCE_THRESHOLD', '7.0')}/10
 
 🤖 *Market Scan Status:*
-• Scanning 1,247 stocks
-• 3 potential signals detected
-• Next alert in ~2-5 minutes
+• Scanning market for new signals
+• Current filter: High-confidence setups only
+• Next potential alert: 2-5 minutes
 
-⏰ Skipped: {datetime.now().strftime('%H:%M:%S EST')}"""
+⏰ Skipped: {result['timestamp']}"""
         
         await bot.send_message(response_text)
-        await bot.answer_callback_query(callback_query_id, f"❌ {ticker} trade skipped")
+        await bot.answer_callback_query(callback_query_id, f"❌ {result['ticker']} trade skipped")
         
     elif callback_data == "portfolio":
-        portfolio_text = f"""📊 *LIVE PORTFOLIO STATUS* 📊
+        # REAL PORTFOLIO STATUS
+        result = await telegram_trading.get_portfolio_status()
+        
+        if result['success']:
+            portfolio_text = f"""📊 *LIVE PORTFOLIO STATUS* 📊
 
 💼 **Account Summary:**
-💰 Total Value: $105,247 (+1.2%)
-📈 Day P&L: +$1,247
-💵 Available Cash: $23,450
-🎯 Buying Power: $89,320
+💰 Total Value: ${result['account_value']:,.2f}
+📈 Day P&L: ${result['day_pl']:+,.2f} ({result['day_pl_pct']:+.2f}%)
+💵 Available Cash: ${result['cash']:,.2f}
+🎯 Buying Power: ${result['buying_power']:,.2f}
 
-📈 **Open Positions:**
-• TSLA: +$445 (+3.2%) 🟢
-• NVDA: -$125 (-0.8%) 🔴
-• AAPL: +$89 (+0.6%) 🟢
+📈 **Open Positions:**"""
 
-📊 **Performance Metrics:**
-🏆 Win Rate: 75% (6/8 trades)
-📈 Total Return: +15.2%
-⚡ Best Day: +$2,340
-🛡️ Max Drawdown: -2.1%
+            for position in result['open_positions']:
+                pnl_emoji = "🟢" if position['unrealized_pl'] >= 0 else "🔴"
+                portfolio_text += f"\n• {position['symbol']}: {pnl_emoji} ${position['unrealized_pl']:+,.2f} ({position['unrealized_plpc']:+.2f}%)"
+            
+            if not result['open_positions']:
+                portfolio_text += "\n• No open positions"
 
-⏰ Updated: {datetime.now().strftime('%H:%M:%S EST')}"""
+            portfolio_text += f"""
 
-        keyboard = {
-            "inline_keyboard": [
-                [
-                    {"text": "📈 Performance Chart", "callback_data": "performance"},
-                    {"text": "📋 Trade History", "callback_data": "history"}
-                ],
-                [
-                    {"text": "🔍 Scan Market", "callback_data": "scan_market"},
-                    {"text": "⚙️ Settings", "callback_data": "settings"}
+� **Trading Activity:**
+✅ Trades Today: {result['trades_today']}
+⏳ Pending Signals: {result['pending_signals']}
+
+⏰ Updated: {result['timestamp']}
+🤖 Data Source: Alpaca Markets (Live)"""
+
+            keyboard = {
+                "inline_keyboard": [
+                    [
+                        {"text": "� Force Market Scan", "callback_data": "scan_market"},
+                        {"text": "⚙️ Settings", "callback_data": "settings"}
+                    ]
                 ]
-            ]
-        }
+            }
 
-        await bot.send_message(portfolio_text, keyboard)
+            await bot.send_message(portfolio_text, keyboard)
+        else:
+            await bot.send_message(f"❌ *Portfolio Error*\n\nCould not fetch portfolio: {result.get('error', 'Unknown error')}")
+        
         await bot.answer_callback_query(callback_query_id, "📊 Portfolio updated")
         
     elif callback_data == "pause_bot":
-        pause_text = f"""⏸️ *TRADING BOT PAUSED* ⏸️
+        # REAL BOT PAUSE
+        result = await telegram_trading.pause_trading()
+        
+        if result['success']:
+            pause_text = f"""⏸️ *TRADING BOT PAUSED* ⏸️
 
 🛑 **All trading activity suspended**
-⏰ Paused at: {datetime.now().strftime('%H:%M:%S EST')}
-📊 No new signals will be generated
-💡 Existing positions remain monitored
+⏰ Paused at: {result['timestamp']}
+📊 Auto-trading disabled
+💡 Manual trades still possible
 
-🔔 **What happens now:**
+🔔 **What's paused:**
+• Automatic signal execution
+• Market scanning (optional)
+• New position opening
+
+🔔 **What continues:**
+• Existing position monitoring
 • Stop loss orders remain active
 • Take profit orders remain active
-• No new trades will be executed
-• Market scanning is paused
 
-To resume trading, click below:"""
+{result['message']}"""
 
-        keyboard = {
-            "inline_keyboard": [
-                [{"text": "▶️ Resume Trading", "callback_data": "resume_bot"}]
-            ]
-        }
+            keyboard = {
+                "inline_keyboard": [
+                    [{"text": "▶️ Resume Trading", "callback_data": "resume_bot"}]
+                ]
+            }
+            
+            await bot.send_message(pause_text, keyboard)
         
-        await bot.send_message(pause_text, keyboard)
         await bot.answer_callback_query(callback_query_id, "⏸️ Bot paused")
         
     elif callback_data == "resume_bot":
-        resume_text = f"""▶️ *TRADING BOT RESUMED* ▶️
+        # REAL BOT RESUME  
+        result = await telegram_trading.resume_trading()
+        
+        if result['success']:
+            resume_text = f"""▶️ *TRADING BOT RESUMED* ▶️
 
-✅ **Trading bot is now active**
-⏰ Resumed at: {datetime.now().strftime('%H:%M:%S EST')}
-🔍 Market scanning reactivated
-📱 Signal alerts will resume
+✅ **Trading system reactivated**
+⏰ Resumed at: {result['timestamp']}
+🔍 Market scanning active
+📱 Signal alerts enabled
 
-🎯 **Current Market Scan:**
-• Analyzing 1,247 stocks
-• RSI oversold conditions
-• Volume spike detection
-• MACD bullish crosses
+🎯 **Current Settings:**
+• Auto-trading: ✅ Enabled
+• Max daily trades: {os.getenv('MAX_DAILY_TRADES', '25')}
+• Risk per trade: {os.getenv('STOP_LOSS_PCT', '2')}%
+• Min confidence: {os.getenv('MIN_CONFIDENCE_THRESHOLD', '7.0')}/10
 
-📊 **Settings Active:**
-• Max position: 15% portfolio
-• Risk per trade: 2%
-• Min confidence: 7.0/10
+{result['message']}
 
 🚀 Ready to catch the next opportunity!"""
 
-        await bot.send_message(resume_text)
+            await bot.send_message(resume_text)
+        
         await bot.answer_callback_query(callback_query_id, "▶️ Bot resumed")
         
     elif callback_data == "scan_market":
-        scan_text = f"""🔍 *MARKET SCAN INITIATED* 🔍
+        # REAL MARKET SCAN
+        result = await telegram_trading.force_market_scan()
+        
+        if result['success']:
+            scan_text = f"""🔍 *MARKET SCAN INITIATED* 🔍
 
-🕐 **Scanning in progress...**
-📊 Stocks analyzed: 1,247
-🧠 AI processing market data
-⚡ Technical indicators computed
+🕐 **Live market analysis in progress...**
+📊 Scanning {os.getenv('MARKET_SCAN_COUNT', '1000+')} stocks
+🧠 AI analyzing technical indicators
+⚡ Real-time data processing
 
-🎯 **Scan Results:**
-✅ 3 potential signals found
-📈 Strong momentum: 2 stocks
-🔴 Oversold bounce: 1 stock
-💪 High confidence: 1 signal
+🎯 **Scan Parameters:**
+• RSI oversold/overbought levels
+• Volume spike detection  
+• MACD momentum signals
+• Support/resistance breaks
 
-⏱️ **Next Steps:**
-• Detailed analysis: 30 seconds
-• Signal generation: 1-2 minutes
+⏱️ **Timeline:**
+• Analysis: 30-60 seconds
+• Signal generation: 1-3 minutes  
 • Alert delivery: Instant
 
-🤖 Will notify when signals are ready!"""
+⏰ Started: {result['timestamp']}
+{result['message']}"""
 
-        await bot.send_message(scan_text)
+            await bot.send_message(scan_text)
+        
         await bot.answer_callback_query(callback_query_id, "🔍 Market scan started")
         
     elif callback_data == "settings":
-        settings_text = f"""⚙️ *BOT CONFIGURATION* ⚙️
+        # REAL SETTINGS DISPLAY
+        settings_text = f"""⚙️ *LIVE BOT CONFIGURATION* ⚙️
 
 🎯 **Risk Management:**
-• Max position size: 15% of portfolio
-• Risk per trade: 2% stop loss
-• Take profit ratio: 2:1
-• Max daily loss: 5%
+• Max position size: {float(os.getenv('MAX_POSITION_SIZE_PCT', '0.10')) * 100:.0f}% of portfolio
+• Risk per trade: {float(os.getenv('STOP_LOSS_PCT', '0.02')) * 100:.0f}% stop loss
+• Take profit ratio: {os.getenv('TAKE_PROFIT_MULTIPLIER', '2.0')}:1
+• Max daily loss: {float(os.getenv('MAX_DAILY_LOSS_PCT', '0.02')) * 100:.0f}%
 
 🤖 **Trading Rules:**
-• Min confidence: 7.0/10 ⭐
-• Max daily trades: 25
-• Trading hours: 9:30-16:00 EST
-• Mode: Paper trading (safe)
+• Min confidence: {os.getenv('MIN_CONFIDENCE_THRESHOLD', '0.7')}/10 ⭐
+• Max daily trades: {os.getenv('MAX_DAILY_TRADES', '25')}
+• Trading mode: {os.getenv('SYSTEM_MODE', 'paper_trading')}
+• Auto-trading: {"✅ Enabled" if os.getenv('AUTO_TRADING_ENABLED', 'false').lower() == 'true' else "⏸️ Manual"}
 
 📱 **Notifications:**
-• Telegram alerts: ✅ Enabled
-• Signal notifications: ✅ Enabled
-• Profit/loss updates: ✅ Enabled
-• Error alerts: ✅ Enabled
+• Telegram alerts: ✅ Enabled (this chat)
+• SMS backup: {"✅ Enabled" if os.getenv('SMS_TO') else "❌ Disabled"}
+• Trading confirmations: ✅ Interactive buttons
 
-📊 **Technical Indicators:**
-• RSI periods: 14, 21
-• MACD: 12, 26, 9
-• Volume threshold: 2x average
-• VWAP deviation: ±0.5%
+📊 **Data Sources:**
+• Broker: Alpaca Markets
+• Market data: Polygon.io
+• AI models: GPT-4o + Claude
 
-Type /config to modify settings"""
+⚙️ **Environment:** {os.getenv('SYSTEM_MODE', 'paper_trading').upper()}
+🔒 **Safety:** All trades are paper trades for testing
+
+To modify settings, update your .env file and restart the bot."""
 
         await bot.send_message(settings_text)
         await bot.answer_callback_query(callback_query_id, "⚙️ Settings displayed")

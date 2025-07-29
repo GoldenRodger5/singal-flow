@@ -50,6 +50,7 @@ class SignalFlowOrchestrator:
             from services.alpaca_trading import AlpacaTradingService
             from services.interactive_trading import InteractiveTradingService
             from services.telegram_bot import TelegramNotifier
+            from services.production_telegram import production_telegram  # NEW: Production integration
             
             # Initialize services
             market_watcher = MarketWatcherAgent()
@@ -132,11 +133,16 @@ class SignalFlowOrchestrator:
                             logger.info(f"Trade declined for {setup['ticker']}")
                     
                     else:
-                        # Notification only mode (original behavior)
+                        # PRODUCTION: Send interactive Telegram signal with real execution buttons
+                        logger.info(f"Sending interactive trading signal for {setup['ticker']}")
+                        
+                        # Send production Telegram signal with executable buttons
+                        await production_telegram.send_trading_signal(recommendation, explanation)
+                        
+                        # Also send backup SMS notification
                         await notifier.send_trade_alert(recommendation, explanation)
-                        # Also send via Telegram with interactive buttons
-                        await telegram_notifier.send_trading_signal(recommendation, explanation)
-                        logger.info(f"Trade alert sent for {setup['ticker']}")
+                        
+                        logger.info(f"Production interactive signal sent for {setup['ticker']}")
                 
         except Exception as e:
             logger.error(f"Error in market scan: {e}")

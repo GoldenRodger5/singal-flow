@@ -1,2 +1,2 @@
-web: python start_webhook.py
-worker: python start_trading_system.py paper --log-level INFO
+web: python run_production.py
+worker: python run_production.py
