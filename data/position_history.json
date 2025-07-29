@@ -1,0 +1,380 @@
+[
+  {
+    "timestamp": "2025-07-28T23:12:09.955312",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.15,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 1.15x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 7.5,
+      "composite_strength": 0.7
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:12:09.979335",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.5,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:12:09.979436",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.4999999999999998,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 1.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:14:18.309947",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.0,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 7.5,
+      "composite_strength": 0.7
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:14:18.339150",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.5,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:14:18.339256",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.4999999999999998,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 1.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:16:57.331000",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.15,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 1.15x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 7.5,
+      "composite_strength": 0.7
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:16:57.358203",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.5,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:16:57.358334",
+    "symbol": "TEST",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 1.4999999999999998,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 1.50x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:53:50.946757",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:53:50.947061",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:53:50.947284",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:55:58.070926",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:55:58.071573",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:55:58.071898",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:57:36.294558",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:57:36.294976",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:57:36.295207",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:19.287676",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:19.288100",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:19.288348",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:54.488747",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:54.489089",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-28T23:59:54.489430",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  },
+  {
+    "timestamp": "2025-07-29T00:00:22.089469",
+    "symbol": "AAPL",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.1,
+    "reasoning": "Base risk sizing: $60000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.10x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.75
+    }
+  },
+  {
+    "timestamp": "2025-07-29T00:00:22.089861",
+    "symbol": "TSLA",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.2,
+    "reasoning": "Base risk sizing: $40000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Confidence adjustment: 1.20x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.85
+    }
+  },
+  {
+    "timestamp": "2025-07-29T00:00:22.090206",
+    "symbol": "SPY",
+    "position_size": 15000.0,
+    "position_percentage": 0.15,
+    "kelly_fraction": 0.25,
+    "volatility_adjustment": 0.6,
+    "confidence_adjustment": 1.0,
+    "reasoning": "Base risk sizing: $160000 | Kelly Criterion: $25000 | Volatility adjustment: 0.60x | Final position: $15000",
+    "technical_signals": {
+      "confidence": 0,
+      "composite_strength": 0.6
+    }
+  }
+]

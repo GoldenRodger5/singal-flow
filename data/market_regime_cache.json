@@ -1,0 +1,219 @@
+{
+  "current_regime": {
+    "regime": "uncertain",
+    "confidence": 0.6735571663158229,
+    "timestamp": "2025-07-29T00:00:22.088250"
+  },
+  "history": [
+    {
+      "regime": "uncertain",
+      "confidence": 0.3701042476909054,
+      "volatility_percentile": 0.03333333333333333,
+      "trend_strength": 0.22526061922726354,
+      "mean_reversion_strength": 0.5,
+      "timestamp": "2025-07-28T23:11:59.999191",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.033333333333333,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "mean_reverting_high_vol",
+      "confidence": 0.509052038996894,
+      "volatility_percentile": 0.7575757575757576,
+      "trend_strength": 0.13626646112859853,
+      "mean_reversion_strength": 1.0,
+      "timestamp": "2025-07-28T23:12:09.975506",
+      "adaptive_thresholds": {
+        "min_confidence_score": 7.700000000000001,
+        "rsi_oversold": 35,
+        "rsi_overbought": 65,
+        "volume_multiplier": 2.757575757575758,
+        "position_size_multiplier": 0.7
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.3445600484766569,
+      "volatility_percentile": 0.5151515151515151,
+      "trend_strength": 0.5289768306222488,
+      "mean_reversion_strength": 0.7064640118947472,
+      "timestamp": "2025-07-28T23:12:09.979021",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.515151515151515,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "trending_low_vol",
+      "confidence": 0.19948424603560239,
+      "volatility_percentile": 0.36666666666666664,
+      "trend_strength": 0.29871061508900587,
+      "mean_reversion_strength": 0.5,
+      "timestamp": "2025-07-28T23:14:17.652510",
+      "adaptive_thresholds": {
+        "min_confidence_score": 5.6000000000000005,
+        "rsi_oversold": 20,
+        "rsi_overbought": 80,
+        "volume_multiplier": 2.3666666666666667,
+        "position_size_multiplier": 1.2
+      }
+    },
+    {
+      "regime": "mean_reverting_low_vol",
+      "confidence": 0.6612621571507997,
+      "volatility_percentile": 0.010101010101010102,
+      "trend_strength": 0.1815679208214348,
+      "mean_reversion_strength": 0.9911593248047197,
+      "timestamp": "2025-07-28T23:14:18.336312",
+      "adaptive_thresholds": {
+        "min_confidence_score": 7.0,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.01010101010101,
+        "position_size_multiplier": 1.1
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.4889031047151074,
+      "volatility_percentile": 0.7171717171717171,
+      "trend_strength": 0.5536421648633125,
+      "mean_reversion_strength": 0.7285720141112535,
+      "timestamp": "2025-07-28T23:14:18.338897",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.717171717171717,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "trending_low_vol",
+      "confidence": 0.34190420678615185,
+      "volatility_percentile": 0.1,
+      "trend_strength": 0.2547605169653797,
+      "mean_reversion_strength": 0.5,
+      "timestamp": "2025-07-28T23:16:56.749593",
+      "adaptive_thresholds": {
+        "min_confidence_score": 5.6000000000000005,
+        "rsi_oversold": 20,
+        "rsi_overbought": 80,
+        "volume_multiplier": 2.1,
+        "position_size_multiplier": 1.2
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.7224644191079757,
+      "volatility_percentile": 0.13131313131313133,
+      "trend_strength": 0.503130744739636,
+      "mean_reversion_strength": 1.0,
+      "timestamp": "2025-07-28T23:16:57.355441",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.1313131313131315,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.4147472094732684,
+      "volatility_percentile": 0.40404040404040403,
+      "trend_strength": 0.5092512440184623,
+      "mean_reversion_strength": 0.7557849238168765,
+      "timestamp": "2025-07-28T23:16:57.357897",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.404040404040404,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "mean_reverting_high_vol",
+      "confidence": 0.5799130091170155,
+      "volatility_percentile": 0.8080808080808081,
+      "trend_strength": 0.23766131067132676,
+      "mean_reversion_strength": 1.0,
+      "timestamp": "2025-07-28T23:59:12.530214",
+      "adaptive_thresholds": {
+        "min_confidence_score": 7.700000000000001,
+        "rsi_oversold": 35,
+        "rsi_overbought": 65,
+        "volume_multiplier": 2.808080808080808,
+        "position_size_multiplier": 0.7
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.6794157430527092,
+      "volatility_percentile": 0.06060606060606061,
+      "trend_strength": 0.31970279921525413,
+      "mean_reversion_strength": 0.97983043288374,
+      "timestamp": "2025-07-29T00:00:22.078658",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.0606060606060606,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.5411874798904445,
+      "volatility_percentile": 0.2828282828282828,
+      "trend_strength": 0.3132767695210368,
+      "mean_reversion_strength": 0.9759562362983324,
+      "timestamp": "2025-07-29T00:00:22.082025",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.282828282828283,
+        "position_size_multiplier": 0.6
+      }
+    },
+    {
+      "regime": "mean_reverting_low_vol",
+      "confidence": 0.45872813008093366,
+      "volatility_percentile": 0.3939393939393939,
+      "trend_strength": 0.237729416111425,
+      "mean_reversion_strength": 1.0,
+      "timestamp": "2025-07-29T00:00:22.084816",
+      "adaptive_thresholds": {
+        "min_confidence_score": 7.0,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.393939393939394,
+        "position_size_multiplier": 1.1
+      }
+    },
+    {
+      "regime": "uncertain",
+      "confidence": 0.6735571663158229,
+      "volatility_percentile": 0.1111111111111111,
+      "trend_strength": 0.40693378336591607,
+      "mean_reversion_strength": 0.9624171993935384,
+      "timestamp": "2025-07-29T00:00:22.088250",
+      "adaptive_thresholds": {
+        "min_confidence_score": 8.4,
+        "rsi_oversold": 30,
+        "rsi_overbought": 70,
+        "volume_multiplier": 2.111111111111111,
+        "position_size_multiplier": 0.6
+      }
+    }
+  ]
+}
