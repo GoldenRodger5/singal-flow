@@ -48,6 +48,13 @@ cover/
 # Virtual environments
 .env
 .env.*
+config_template.env
+
+# Configuration files with real credentials
+*.env
+!.env.template
+!.env.example
+!railway.env.template
 .venv
 env/
 venv/
