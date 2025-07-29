@@ -49,6 +49,7 @@ class SignalFlowOrchestrator:
             from services.twilio_whatsapp import WhatsAppNotifier
             from services.alpaca_trading import AlpacaTradingService
             from services.interactive_trading import InteractiveTradingService
+            from services.telegram_bot import TelegramNotifier
             
             # Initialize services
             market_watcher = MarketWatcherAgent()
@@ -56,6 +57,7 @@ class SignalFlowOrchestrator:
             trade_recommender = TradeRecommenderAgent()
             reasoning_agent = ReasoningAgent()
             notifier = WhatsAppNotifier()
+            telegram_notifier = TelegramNotifier()
             alpaca_trading = AlpacaTradingService()
             interactive_trading = InteractiveTradingService()
             
@@ -90,6 +92,18 @@ class SignalFlowOrchestrator:
                                 f"⭐ Confidence: {recommendation['confidence']}/10"
                             )
                             
+                            # Send Telegram notification too
+                            await telegram_notifier.send_execution_update(
+                                setup['ticker'], 
+                                'BUY', 
+                                'success',
+                                {
+                                    'shares': order_result['shares'],
+                                    'price': recommendation['entry'],
+                                    'order_id': order_result.get('order_id', 'N/A')
+                                }
+                            )
+                            
                             # Add to execution monitor
                             from agents.execution_monitor_agent import ExecutionMonitorAgent
                             monitor = ExecutionMonitorAgent()
@@ -105,6 +119,7 @@ class SignalFlowOrchestrator:
                             logger.info(f"Auto-trade executed and monitored for {setup['ticker']}")
                         else:
                             await notifier.send_message(f"❌ Auto-trade failed for {setup['ticker']}")
+                            await telegram_notifier.send_simple_message(f"❌ Auto-trade failed for {setup['ticker']}")
                     
                     elif self.config.INTERACTIVE_TRADING_ENABLED:
                         # Interactive trading - request confirmation
@@ -119,6 +134,8 @@ class SignalFlowOrchestrator:
                     else:
                         # Notification only mode (original behavior)
                         await notifier.send_trade_alert(recommendation, explanation)
+                        # Also send via Telegram with interactive buttons
+                        await telegram_notifier.send_trading_signal(recommendation, explanation)
                         logger.info(f"Trade alert sent for {setup['ticker']}")
                 
         except Exception as e:
