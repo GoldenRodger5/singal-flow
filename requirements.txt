@@ -54,3 +54,7 @@ flake8>=6.0.0
 # Production monitoring
 psutil>=5.9.0
 websocket-client>=1.6.0
+
+# Streamlit Cloud deployment dependencies
+# (These ensure graceful fallback handling for cloud deployment)
+# Note: streamlit, pandas, numpy, plotly already included above

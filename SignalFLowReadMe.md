@@ -1,9 +1,6 @@
 # 🚀 SignalFlow - Advanced AI Trading System
 
-> **Comprehensive AI-powered trading system with sophisticated algorithms, multi-agent architecture, and advanced dashboard i├── 📁 deployment/                     # Production deployment files
-│   ├── 📄 railway.json                # Railway configuration
-│   ├── 📄 Procfile                    # Process definitions
-│   └── 📄 deploy_to_railway.sh        # Deployment scriptfaces**
+> **Comprehensive AI-powered trading system with sophisticated algorithms, multi-agent architecture, and advanced dashboard interfaces**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -29,8 +26,7 @@ SignalFlow is a comprehensive AI-powered trading ecosystem that combines advance
 - **Trade Recommender Agent**: AI-powered trade decision making with confidence scoring
 - **Sentiment Analysis Agent**: News and social sentiment integration
 - **Execution Monitor Agent**: Position tracking and performance analysis
-- **Reasoning Agent**: Natural language explanations for trading decisions
-- **Summary Agent**: Daily performance analytics and reporting
+- **Risk Management Agent**: Dynamic risk assessment and position sizing
 
 #### **📊 Advanced Algorithms**
 - **Kelly Criterion**: Mathematical position sizing optimization
@@ -116,6 +112,16 @@ python run_production.py
 - **Live System**: https://web-production-3e19d.up.railway.app (Production)
 - **API Docs**: http://localhost:8000/docs (FastAPI documentation)
 - **Telegram Bot**: Automatic notifications and interactive controls
+python scripts/launch_ai_system.py
+
+# Fast UI only
+python scripts/launch_fast_ui.py
+```
+
+### **4. Access Interfaces**
+- **Trading UI**: http://localhost:8501
+- **AI Dashboard**: http://localhost:8001/docs
+- **Telegram Bot**: Automatic notifications
 
 ---
 
@@ -128,15 +134,19 @@ signalflow/
 ├── 📄 start_trading.py               # Main trading system launcher
 ├── 📄 enhanced_trading_ui.py          # Comprehensive dashboard (web-enabled)
 ├── 📄 railway_dashboard.py            # Cloud monitoring dashboard
+├── 📄 production_api.py               # Production API endpoints
 ├── 📄 railway_start.py                # Railway deployment entry point
 ├── 📄 telegram_webhook.py             # Telegram bot integration
+├── 📄 notification_service.py         # Multi-channel notifications
+├── 📄 response_system.py              # AI response orchestration
 ├── 📁 agents/                         # Multi-agent AI system
+│   ├── 📄 __init__.py                 # Agent initialization
 │   ├── 📄 market_watcher_agent.py     # Real-time market scanning
 │   ├── 📄 trade_recommender_agent.py  # AI-powered trade decisions
 │   ├── 📄 sentiment_agent.py          # News & social sentiment analysis
 │   ├── 📄 execution_monitor_agent.py  # Position tracking & management
-│   ├── 📄 reasoning_agent.py          # Natural language explanations
-│   └── 📄 summary_agent.py            # Daily performance analytics
+│   ├── 📄 risk_manager_agent.py       # Dynamic risk assessment
+│   └── 📄 learning_agent.py           # Continuous improvement AI
 ├── 📁 services/                       # Core business logic
 │   ├── 📄 config.py                   # Configuration management
 │   ├── 📄 enhanced_position_sizer.py  # Kelly Criterion position sizing
@@ -145,10 +155,12 @@ signalflow/
 │   ├── 📄 ai_learning_engine.py       # Supervised learning core
 │   ├── 📄 telegram_bot.py             # Interactive bot interface
 │   ├── 📄 database_manager.py         # MongoDB Atlas integration
-│   ├── 📄 data_provider.py            # External data orchestration
-│   └── 📄 indicators.py               # Technical analysis indicators
+│   ├── 📄 api_manager.py              # External API orchestration
+│   └── 📄 notification_manager.py     # Multi-channel messaging
 ├── 📁 utils/                          # Utility functions
-│   ├── 📄 logger_setup.py             # Logging configuration
+│   ├── 📄 data_processor.py           # Market data processing
+│   ├── 📄 technical_analysis.py       # TA indicator calculations
+│   ├── 📄 risk_calculator.py          # Risk metrics & analysis
 │   └── 📄 performance_tracker.py      # Trade performance analytics
 ├── 📁 data/                           # Data storage & caching
 │   ├── 📁 trades/                     # Trade execution records
@@ -190,17 +202,17 @@ signalflow/
 - **Algorithms**: Dynamic stop-loss, profit target optimization
 - **Output**: Position management recommendations
 
-#### **Reasoning Agent**
-- **Function**: Natural language explanations for trading decisions
-- **Processing**: AI-powered analysis using GPT-4o and Claude
-- **Integration**: Works with all agents to provide trade rationale
-- **Output**: Human-readable explanations and decision context
+#### **Risk Management Agent**
+- **Function**: Portfolio-wide risk assessment
+- **Calculations**: Value at Risk (VaR), correlation analysis, exposure limits
+- **Controls**: Maximum drawdown protection, position sizing validation
+- **Output**: Risk-adjusted position recommendations
 
-#### **Summary Agent**
-- **Function**: Daily performance analytics and reporting
-- **Analytics**: Trade statistics, win rates, performance metrics
-- **Reporting**: Comprehensive daily summaries and insights
-- **Output**: Performance reports and strategy analytics
+#### **Learning Agent**
+- **Function**: Continuous system improvement
+- **Methods**: Outcome analysis, pattern optimization, threshold adaptation
+- **Learning**: 70/30 train/validation split, daily optimization cycles
+- **Output**: Improved algorithms and confidence calibration
 
 ---
 
@@ -497,11 +509,14 @@ python start_trading.py --mode paper        # 30-day paper trading
 # System health endpoints
 /health                    # Basic health check
 /status                    # Trading system status  
+/api/metrics              # Performance metrics (planned)
+/api/positions            # Current positions (planned)
 ```
 
 ### **🔄 Infrastructure**
 - **Database**: MongoDB Atlas (cloud-native)
-- **Hosting**: Railway (cloud platform with auto-scaling)
+- **Hosting**: Railway (auto-scaling cloud platform)
+- **CDN**: Built-in content delivery optimization
 - **Monitoring**: Integrated logging and error tracking
 - **Backup**: Automated database backups and recovery
 
@@ -548,6 +563,7 @@ performance_metrics = {
 - **Rate Limiting**: Compliance with API provider limits
 - **Error Handling**: Graceful degradation on component failure
 - **Data Encryption**: Secure database connections and API communications
+- **Access Control**: Multi-factor authentication for critical operations
 
 ### **⚠️ Risk Management**
 ```python

@@ -8,13 +8,24 @@ import pandas as pd
 import time
 import logging
 from datetime import datetime, timedelta
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 import os
 import sys
 import requests
 import json
+
+# Try to import plotly with fallback
+try:
+    import plotly.graph_objects as go
+    import plotly.express as px
+    from plotly.subplots import make_subplots
+    PLOTLY_AVAILABLE = True
+except ImportError as e:
+    PLOTLY_AVAILABLE = False
+    st.error("📊 Plotly not available - charts will be limited. Please ensure plotly is installed.")
+    # Create dummy objects to prevent errors
+    go = None
+    px = None
+    make_subplots = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -356,6 +367,11 @@ def render_main_chart_mobile():
     """Render main chart optimized for mobile."""
     st.markdown("### 📈 Performance Chart")
     
+    if px is None:
+        st.warning("⚠️ Chart functionality not available. Install plotly for enhanced charts.")
+        render_basic_chart()
+        return
+    
     # Create a simple performance chart
     days = pd.date_range(start='2025-07-01', end='2025-07-29', freq='D')
     performance = pd.DataFrame({
@@ -525,6 +541,11 @@ def render_main_chart():
     """Render the main trading chart."""
     st.markdown("### 📈 Market Overview")
     
+    if make_subplots is None or go is None:
+        st.warning("⚠️ Enhanced chart functionality not available. Install plotly for advanced charts.")
+        render_basic_chart()
+        return
+    
     # Generate sample data
     dates = pd.date_range(start='2024-01-01', end='2024-01-31', freq='D')
     sample_data = pd.DataFrame({
@@ -668,13 +689,17 @@ def render_basic_controls():
 
 def render_basic_chart():
     """Render basic chart when enhanced features not available."""
-    # Simple line chart
+    st.markdown("#### 📊 Basic Chart View")
+    
+    # Simple line chart using Streamlit's built-in functionality
     chart_data = pd.DataFrame({
         'date': pd.date_range('2024-01-01', periods=30),
-        'value': range(30)
+        'Portfolio Value': [100000 + i*150 + (i%7)*100 for i in range(30)],
+        'Market Index': [100 + i*2 + (i%5)*3 for i in range(30)]
     })
     
     st.line_chart(chart_data.set_index('date'))
+    st.caption("📈 Simple portfolio performance chart (basic view)")
 
 
 def render_basic_holdings():
