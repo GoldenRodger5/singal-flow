@@ -21,9 +21,14 @@
       ]
     }
   },
+  "containerEnv": {
+    "RAILWAY_TRADING_URL": "https://web-production-3e19d.up.railway.app",
+    "WEB_MODE": "true",
+    "ENVIRONMENT": "production"
+  },
   "updateContentCommand": "pip3 install --user streamlit>=1.28.0 plotly>=5.15.0 pandas>=1.5.0 numpy>=1.24.0 requests>=2.31.0 python-dotenv>=1.0.0 && [ -f requirements.txt ] && pip3 install --user -r requirements.txt || echo 'Requirements file not found, using minimal dependencies' && echo '✅ All Streamlit dependencies installed'",
   "postAttachCommand": {
-    "streamlit": "echo '🚀 Starting SignalFlow Trading Dashboard...' && streamlit run enhanced_trading_ui.py"
+    "streamlit": "echo '🚀 Starting SignalFlow Trading Dashboard in Production Mode...' && streamlit run enhanced_trading_ui.py"
   },
   "portsAttributes": {
     "8501": {

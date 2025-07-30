@@ -46,6 +46,11 @@ except ImportError as e:
     LOCAL_MODE = False
     logger.warning(f"Enhanced features not available - running in web mode: {e}")
 
+# Override LOCAL_MODE if environment variables suggest web/production mode
+if os.environ.get("WEB_MODE", "").lower() == "true" or os.environ.get("RAILWAY_TRADING_URL"):
+    LOCAL_MODE = False
+    logger.info("🌐 Web mode enabled - connecting to Railway production system")
+
 # Set page configuration - optimized for mobile
 st.set_page_config(
     page_title="SignalFlow Enhanced Trading",
