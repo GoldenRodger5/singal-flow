@@ -71,6 +71,69 @@ async def trading_status():
         "timestamp": datetime.now()
     }
 
+@app.get("/api/holdings")
+async def get_holdings():
+    """Get current holdings from the trading system."""
+    try:
+        # Import here to avoid circular imports
+        from services.alpaca_trading import AlpacaTradingService
+        
+        trading_service = AlpacaTradingService()
+        
+        # Get positions from Alpaca (paper trading account)
+        positions = trading_service.api.list_positions()
+        
+        holdings = []
+        for position in positions:
+            holdings.append({
+                "symbol": position.symbol,
+                "quantity": float(position.qty),
+                "current_price": float(position.current_price) if position.current_price else 0.0,
+                "market_value": float(position.market_value) if position.market_value else 0.0,
+                "unrealized_pnl": float(position.unrealized_pl) if position.unrealized_pl else 0.0,
+                "percentage_change": float(position.unrealized_plpc) * 100 if position.unrealized_plpc else 0.0,
+                "side": position.side
+            })
+        
+        return {"holdings": holdings, "total_value": sum(h["market_value"] for h in holdings)}
+        
+    except Exception as e:
+        logger.error(f"Error fetching holdings: {e}")
+        return {"holdings": [], "total_value": 0.0, "error": str(e)}
+
+@app.get("/api/portfolio")
+async def get_portfolio_summary():
+    """Get portfolio summary from the trading system."""
+    try:
+        from services.alpaca_trading import AlpacaTradingService
+        
+        trading_service = AlpacaTradingService()
+        account = trading_service.api.get_account()
+        
+        return {
+            "equity": float(account.equity),
+            "buying_power": float(account.buying_power),
+            "cash": float(account.cash),
+            "portfolio_value": float(account.portfolio_value),
+            "daytrade_count": int(account.daytrade_count),
+            "trading_blocked": account.trading_blocked,
+            "account_blocked": account.account_blocked
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching portfolio: {e}")
+        return {"error": str(e)}
+
+def get_health_data():
+    """Get health check data."""
+    return {
+        "status": "healthy",
+        "uptime": time.time() - start_time,
+        "mode": "paper_trading",
+        "environment": "railway",
+        "timestamp": datetime.now()
+    }
+
 def start_health_server():
     """Start health check server in background."""
     port = int(os.environ.get("PORT", 8000))

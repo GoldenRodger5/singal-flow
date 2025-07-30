@@ -1,47 +1,47 @@
-# Frontend - Vercel Deployment (Next.js Dashboard)
+# Signal Flow Dashboard
 
-## Directory Structure
-```
-frontend/
-├── app/                   # Next.js 14 App Router
-│   ├── api/              # API routes (proxy to Railway)
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Main dashboard page
-│   └── globals.css       # Global styles
-├── components/           # React components
-│   ├── SystemOverview.tsx
-│   ├── TradingPerformance.tsx
-│   ├── Holdings.tsx
-│   ├── AIAnalysis.tsx
-│   ├── RealtimeCharts.tsx
-│   ├── ControlPanel.tsx
-│   └── EnhancedControlPanel.tsx
-├── package.json          # Dependencies and scripts
-├── next.config.js        # Next.js configuration
-├── tailwind.config.js    # Tailwind CSS config
-├── tsconfig.json         # TypeScript configuration
-└── postcss.config.js     # PostCSS configuration
+A Next.js dashboard for monitoring the Signal Flow AI Trading System.
+
+## Features
+
+- **Real-time System Overview**: Monitor system status, database connectivity, and automation status
+- **Trading Performance**: View portfolio performance, P&L, and trading metrics
+- **Holdings Management**: Track current positions with enhanced AI analysis
+- **AI Analysis**: Real-time market sentiment and AI-powered insights
+- **AI Learning Dashboard**: Monitor model performance and learning progress
+- **Realtime Charts**: Live price charts with multiple symbol support
+- **Control Panel**: Manage trading system settings and configurations
+- **Enhanced Mode**: Toggle between basic and advanced features
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-## Package.json Scripts
-```json
-{
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build", 
-    "start": "next start",
-    "lint": "next lint"
-  }
-}
-```
+### Environment Variables
 
-## Vercel Environment Variables
-```env
-RAILWAY_TRADING_URL=https://web-production-3e19d.up.railway.app
-MONGODB_URL=your_mongodb_connection_string_here
-OPENAI_API_KEY=your_openai_api_key_here
-ALPACA_API_KEY=your_alpaca_api_key_here
-POLYGON_API_KEY=your_polygon_api_key_here
+Create a `.env.local` file:
+
+```bash
+NEXT_PUBLIC_BACKEND_URL=https://web-production-3e19d.up.railway.app
 ```
 
 ## Build & Deployment Commands
