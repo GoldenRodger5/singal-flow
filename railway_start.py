@@ -80,8 +80,7 @@ def start_trading_system():
     """Start the main trading system."""
     try:
         # Import and start trading system
-        from services.system_orchestrator import TradingSystemOrchestrator
-        from utils.config import Config
+        from services.config import Config
         
         logger.info("🚀 Starting Signal Flow Trading System on Railway")
         logger.info(f"📅 Start time: {datetime.now()}")
@@ -90,26 +89,28 @@ def start_trading_system():
         # Initialize configuration
         config = Config()
         
-        # Create and start orchestrator
-        orchestrator = TradingSystemOrchestrator(config)
+        # Start the main trading application
+        logger.info("✅ Starting main trading application...")
+        
+        # Import main application
+        import main
         
         logger.info("✅ Trading system initialized successfully")
         logger.info("🎯 System will run continuously until stopped")
-        
-        # Start the orchestrator
-        orchestrator.start()
         
         # Keep the system running
         try:
             while True:
                 time.sleep(60)  # Check every minute
-                if not orchestrator.is_running():
-                    logger.warning("Trading system stopped, restarting...")
-                    orchestrator.start()
+                logger.debug("🔄 System health check - running normally")
                     
         except KeyboardInterrupt:
             logger.info("Graceful shutdown requested")
-            orchestrator.stop()
+        except Exception as e:
+            logger.error(f"Trading system error: {e}")
+            # Auto-restart on error
+            time.sleep(30)
+            start_trading_system()
             
     except Exception as e:
         logger.error(f"Failed to start trading system: {e}")

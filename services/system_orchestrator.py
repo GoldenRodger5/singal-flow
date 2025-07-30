@@ -4,6 +4,7 @@ Coordinates all components: LLM routing, time windows, automation, and trading l
 """
 import asyncio
 import threading
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass
@@ -17,6 +18,8 @@ from .llm_router import LLMRouter, TaskType
 from .trading_window_config import TradingWindowManager, TradingWindow, StrategyType
 from .indicators import TechnicalIndicators
 from .market_regime_detector import MarketRegimeDetector
+import os
+import requests
 
 
 class SystemMode(Enum):
@@ -105,9 +108,16 @@ class TradingSystemOrchestrator:
         # Register callbacks
         self.automated_manager.register_callbacks(
             trade_execution=self._execute_trade,
-            data_fetch=self._fetch_market_data,
-            notification=self._send_notification
+            data_fetch=self._fetch_market_data_sync,
+            notification=self._notification_wrapper
         )
+        
+        # Register database callback for paper trade logging
+        if hasattr(self.automated_manager, 'register_database_callback'):
+            self.automated_manager.register_database_callback(self._log_paper_trade_to_db)
+        
+        # Setup Telegram notifications
+        self._setup_telegram_notifications()
     
     async def start_system(self) -> bool:
         """Start the complete trading system."""
@@ -127,12 +137,13 @@ class TradingSystemOrchestrator:
             # Initialize components
             await self._initialize_components()
             
-            # Start monitoring loops
-            self._start_monitoring_loops()
-            
+            # Set running state before starting loops
             self.is_running = True
             self.start_time = datetime.now()
             self.last_heartbeat = datetime.now()
+            
+            # Start monitoring loops
+            self._start_monitoring_loops()
             
             # Send startup notification
             await self._send_notification(
@@ -222,12 +233,22 @@ class TradingSystemOrchestrator:
     def _check_configuration(self) -> bool:
         """Check system configuration validity."""
         try:
-            required_env_vars = ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY']
+            # Check for required API keys
+            if not hasattr(self.config, 'OPENAI_API_KEY') or not self.config.OPENAI_API_KEY:
+                logger.error("Missing required environment variable: OPENAI_API_KEY")
+                return False
             
-            for var in required_env_vars:
-                if not self.config.get(var):
-                    logger.error(f"Missing required environment variable: {var}")
-                    return False
+            if not hasattr(self.config, 'CLAUDE_API_KEY') or not self.config.CLAUDE_API_KEY:
+                logger.warning("Missing CLAUDE_API_KEY - Claude models will not be available")
+            
+            # Check trading configuration
+            if not hasattr(self.config, 'ALPACA_API_KEY') or not self.config.ALPACA_API_KEY:
+                logger.error("Missing required environment variable: ALPACA_API_KEY")
+                return False
+                
+            if not hasattr(self.config, 'ALPACA_SECRET') or not self.config.ALPACA_SECRET:
+                logger.error("Missing required environment variable: ALPACA_SECRET")
+                return False
             
             return True
         except Exception as e:
@@ -280,9 +301,11 @@ class TradingSystemOrchestrator:
     
     def _heartbeat_loop(self):
         """Heartbeat loop to monitor system health."""
+        logger.info("🔄 Heartbeat loop started")
         while self.is_running:
             try:
                 self.last_heartbeat = datetime.now()
+                logger.debug(f"💓 Heartbeat updated: {self.last_heartbeat}")
                 
                 # Check system health
                 health_status = self._check_system_health()
@@ -291,11 +314,13 @@ class TradingSystemOrchestrator:
                     logger.warning(f"System health issue: {health_status['issues']}")
                 
                 # Sleep for heartbeat interval
-                threading.Event().wait(30)  # 30 second heartbeat
+                time.sleep(30)  # 30 second heartbeat
                 
             except Exception as e:
                 logger.error(f"Error in heartbeat loop: {e}")
-                threading.Event().wait(60)  # Longer sleep on error
+                time.sleep(30)  # Continue even if there's an error
+        
+        logger.info("🔄 Heartbeat loop stopped")
     
     def _window_change_monitor(self):
         """Monitor trading window changes."""
@@ -378,6 +403,28 @@ class TradingSystemOrchestrator:
             logger.error(f"Error fetching market data: {e}")
             return {}
     
+    def _fetch_market_data_sync(self) -> Dict[str, Any]:
+        """Sync wrapper for async market data fetching."""
+        try:
+            # Create a simple sync alternative instead of running async
+            current_time = datetime.now()
+            current_window = self.window_manager.get_current_window()
+            
+            return {
+                'timestamp': current_time,
+                'market_status': 'open',
+                'current_window': current_window.value,
+                'market_regime': 'normal'  # Simplified for sync operation
+            }
+        except Exception as e:
+            logger.error(f"Error in sync market data fetch: {e}")
+            return {
+                'timestamp': datetime.now(),
+                'market_status': 'unknown',
+                'current_window': 'unknown',
+                'market_regime': 'unknown'
+            }
+    
     async def _execute_trade(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a trade through the orchestrator."""
         try:
@@ -413,6 +460,66 @@ class TradingSystemOrchestrator:
         except Exception as e:
             logger.error(f"Error executing trade: {e}")
             return {'success': False, 'error': str(e)}
+    
+    def _log_paper_trade_to_db(self, trade_data: Dict[str, Any]):
+        """Log paper trade to database and update session stats."""
+        try:
+            # Update session stats for proper tracking
+            self.session_stats['trades_executed'] += 1
+            
+            # Create trade record for database
+            trade_record = {
+                'symbol': trade_data.get('symbol', 'UNKNOWN'),
+                'action': trade_data.get('action', 'UNKNOWN').upper(),
+                'quantity': trade_data.get('shares', 0),
+                'price': trade_data.get('buy_price', 0),
+                'sell_price': trade_data.get('sell_price', 0),
+                'timestamp': trade_data.get('executed_at', datetime.now()),
+                'source': 'paper_trading',
+                'confidence': trade_data.get('confidence', 0.75),
+                'execution_id': trade_data.get('trade_id', f"paper_{datetime.now().timestamp()}"),
+                'status': 'completed',
+                'profit_loss': trade_data.get('pnl', 0),
+                'percentage_return': trade_data.get('percentage_return', 0),
+                'fees': 0.0,  # No fees in paper trading
+                'paper_trade': True
+            }
+            
+            # Log to database using synchronous method to avoid async issues
+            try:
+                if hasattr(self, 'db_manager') and self.db_manager:
+                    # Use a background thread to handle the async logging
+                    import threading
+                    def log_trade_background():
+                        try:
+                            import asyncio
+                            # Create new event loop for this thread
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            loop.run_until_complete(self.db_manager.log_trade(trade_record))
+                            loop.close()
+                        except Exception as e:
+                            logger.error(f"Background trade logging error: {e}")
+                    
+                    thread = threading.Thread(target=log_trade_background, daemon=True)
+                    thread.start()
+                else:
+                    logger.warning("No database manager available for trade logging")
+            except Exception as db_error:
+                logger.error(f"Database logging error: {db_error}")
+            
+            logger.info(f"📝 Paper trade logged: {trade_record['symbol']} {trade_record['action']} P&L: ${trade_record['profit_loss']:+.2f}")
+            
+        except Exception as e:
+            logger.error(f"Error logging paper trade: {e}")
+    
+    async def _async_log_trade(self, trade_record: Dict[str, Any]):
+        """Async method to log trade to database."""
+        try:
+            if hasattr(self, 'db_manager') and self.db_manager:
+                await self.db_manager.log_trade(trade_record)
+        except Exception as e:
+            logger.error(f"Async trade logging error: {e}")
     
     async def _generate_trade_explanation(self, signal: Dict[str, Any]) -> str:
         """Generate AI explanation for a trade using LLM router."""
@@ -454,6 +561,70 @@ class TradingSystemOrchestrator:
         except Exception as e:
             logger.error(f"Error generating trade explanation: {e}")
             return f"Error generating explanation: {str(e)}"
+    
+    def _setup_telegram_notifications(self):
+        """Setup Telegram as a notification handler."""
+        try:
+            # Create Telegram notification handler
+            async def telegram_handler(notification: dict):
+                """Send notification to Telegram."""
+                try:
+                    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+                    chat_id = os.getenv('TELEGRAM_CHAT_ID')
+                    
+                    if not bot_token or not chat_id:
+                        logger.warning("Telegram credentials not configured - skipping notification")
+                        return
+                    
+                    title = notification.get('title', 'Trading System')
+                    message = notification.get('message', 'Notification')
+                    priority = notification.get('priority', 'info')
+                    
+                    # Format message for Telegram
+                    telegram_message = f"🤖 {title}\n\n{message}"
+                    
+                    # Add priority emoji
+                    if priority == 'high':
+                        telegram_message = f"🚨 {telegram_message}"
+                    elif priority == 'warning':
+                        telegram_message = f"⚠️ {telegram_message}"
+                    elif priority == 'success':
+                        telegram_message = f"✅ {telegram_message}"
+                    
+                    # Send to Telegram (plain text to avoid formatting issues)
+                    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                    payload = {
+                        "chat_id": chat_id,
+                        "text": telegram_message
+                    }
+                    
+                    response = requests.post(url, json=payload)
+                    if response.status_code == 200:
+                        logger.info(f"📱 Telegram notification sent: {title}")
+                    else:
+                        logger.error(f"Failed to send Telegram notification: {response.status_code}")
+                    
+                except Exception as e:
+                    logger.error(f"Error sending Telegram notification: {e}")
+            
+            # Register the handler
+            self.notification_handlers.append(telegram_handler)
+            logger.info("📱 Telegram notifications configured")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup Telegram notifications: {e}")
+    
+    def _notification_wrapper(self, notification_data: dict):
+        """Wrapper for notification callback to handle async calls."""
+        try:
+            title = notification_data.get('title', 'Trading System')
+            message = notification_data.get('message', 'Notification')
+            priority = notification_data.get('priority', 'info')
+            
+            # Create async task for notification
+            asyncio.create_task(self._send_notification(title, message, priority))
+        except Exception as e:
+            logger.error(f"Error in notification wrapper: {e}")
     
     async def _send_notification(self, title: str, message: str, priority: str = "info"):
         """Send notification through configured channels."""

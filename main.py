@@ -35,29 +35,28 @@ class SignalFlowOrchestrator:
     async def run_market_scan(self):
         """Run the market scanning process with AI learning integration."""
         try:
-            if not self.config.is_trading_hours():
-                logger.info("Outside trading hours, skipping market scan")
-                return
+            # Skip trading hours check for full automation mode
+            # if not self.config.is_trading_hours():
+            #     logger.info("Outside trading hours, skipping market scan")
+            #     return
                 
-            logger.info("Starting AI-enhanced market scan...")
+            logger.info("Starting AI-enhanced market scan (24/7 automation mode)...")
             
             # Import agents here to avoid circular imports
             from agents.market_watcher_agent import MarketWatcherAgent
             from agents.sentiment_agent import SentimentAgent
             from agents.trade_recommender_agent import TradeRecommenderAgent
             from agents.reasoning_agent import ReasoningAgent
-            from services.twilio_whatsapp import WhatsAppNotifier
             from services.alpaca_trading import AlpacaTradingService
             from services.interactive_trading import InteractiveTradingService
             from services.telegram_bot import TelegramNotifier
             from services.production_telegram import production_telegram  # NEW: Production integration
             
-            # Initialize services
+            # Initialize services (Telegram only - no WhatsApp/Twilio)
             market_watcher = MarketWatcherAgent()
             sentiment_agent = SentimentAgent()
             trade_recommender = TradeRecommenderAgent()
             reasoning_agent = ReasoningAgent()
-            notifier = WhatsAppNotifier()
             telegram_notifier = TelegramNotifier()
             alpaca_trading = AlpacaTradingService()
             interactive_trading = InteractiveTradingService()
@@ -84,7 +83,7 @@ class SignalFlowOrchestrator:
                         
                         if order_result:
                             # Send notification about executed trade
-                            await notifier.send_message(
+                            await telegram_notifier.send_simple_message(
                                 f"🤖 AUTO-TRADE EXECUTED\n"
                                 f"📊 {setup['ticker']}: {order_result['shares']} shares\n"
                                 f"💰 Entry: ${recommendation['entry']}\n"
@@ -119,7 +118,6 @@ class SignalFlowOrchestrator:
                             
                             logger.info(f"Auto-trade executed and monitored for {setup['ticker']}")
                         else:
-                            await notifier.send_message(f"❌ Auto-trade failed for {setup['ticker']}")
                             await telegram_notifier.send_simple_message(f"❌ Auto-trade failed for {setup['ticker']}")
                     
                     elif self.config.INTERACTIVE_TRADING_ENABLED:
@@ -140,7 +138,7 @@ class SignalFlowOrchestrator:
                         await production_telegram.send_trading_signal(recommendation, explanation)
                         
                         # Also send backup SMS notification
-                        await notifier.send_trade_alert(recommendation, explanation)
+                        await telegram_notifier.send_trade_alert(recommendation, explanation)
                         
                         logger.info(f"Production interactive signal sent for {setup['ticker']}")
                 
@@ -182,34 +180,18 @@ class SignalFlowOrchestrator:
             logger.error(f"Error generating daily summary: {e}")
     
     def schedule_tasks(self):
-        """Schedule all trading tasks."""
-        # Morning screener at 9:00 AM
-        schedule.every().day.at("09:00").do(
-            lambda: asyncio.create_task(self.run_morning_screener())
-        )
+        """Schedule trading and learning tasks."""
+        # Schedule market scans every minute for full automation
+        schedule.every(1).minutes.do(lambda: asyncio.create_task(self.run_market_scan()))
         
-        # Market scanning every 2 minutes during trading hours
-        schedule.every(2).minutes.do(
-            lambda: asyncio.create_task(self.run_market_scan())
-        )
+        # Schedule learning tasks
+        schedule.every(30).minutes.do(lambda: asyncio.create_task(self.learning_manager.run_comprehensive_learning()))
+        schedule.every(2).hours.do(lambda: asyncio.create_task(self.learning_manager.run_strategy_validation()))
         
-        # Daily summary at 4:00 PM
-        schedule.every().day.at("16:00").do(
-            lambda: asyncio.create_task(self.run_daily_summary())
-        )
+        # Schedule summary generation  
+        schedule.every().day.at("16:00").do(lambda: asyncio.create_task(self.generate_daily_summary()))
         
-        # AI Learning tasks
-        # Daily learning at 5:00 PM (after market close)
-        schedule.every().day.at("17:00").do(
-            lambda: asyncio.create_task(self.run_learning_cycle())
-        )
-        
-        # Weekly backtesting on Sundays at 8:00 PM
-        schedule.every().sunday.at("20:00").do(
-            lambda: asyncio.create_task(self.run_strategy_validation())
-        )
-        
-        logger.info("Trading and AI learning tasks scheduled")
+        logger.info("Trading and AI learning tasks scheduled (full automation mode)")
     
     async def run_learning_cycle(self):
         """Run AI learning cycle."""

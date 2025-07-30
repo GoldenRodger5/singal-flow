@@ -34,11 +34,21 @@ class EnhancedPositionSizer:
         self.position_history_file = "data/position_history.json"
         self.position_history = []
         
-        # Risk management parameters
-        self.max_portfolio_risk = 0.02  # 2% portfolio risk per trade
-        self.max_position_size = 0.15   # 15% max position size
-        self.max_sector_exposure = 0.30  # 30% max sector exposure
-        self.volatility_target = config.MAX_PORTFOLIO_VOLATILITY if hasattr(config, 'MAX_PORTFOLIO_VOLATILITY') else 0.15
+        # Enhanced risk management for low-cap momentum
+        self.max_portfolio_risk = 0.03  # 3% portfolio risk per trade (increased)
+        self.max_position_size = getattr(config, 'MAX_POSITION_SIZE_PERCENT', 0.50)  # Up to 50%
+        self.base_position_size = getattr(config, 'POSITION_SIZE_PERCENT', 0.25)  # 25% base
+        self.max_sector_exposure = 0.40  # 40% max sector exposure (increased)
+        self.volatility_target = getattr(config, 'MAX_PORTFOLIO_VOLATILITY', 0.15)
+        
+        # Low-cap specific parameters
+        self.sub_3_dollar_boost = getattr(config, 'SUB_3_DOLLAR_POSITION_BOOST', 0.10)
+        self.max_sub_3_exposure = getattr(config, 'MAX_SUB_3_DOLLAR_EXPOSURE', 0.60)
+        self.min_volume_threshold = getattr(config, 'MIN_DAILY_VOLUME', 2000000)
+        
+        # Kelly Criterion adjustments for momentum
+        self.kelly_multiplier = 1.2  # Boost Kelly by 20% for momentum edge
+        self.max_kelly_fraction = 0.4  # Max 40% via Kelly
         
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
@@ -82,6 +92,13 @@ class EnhancedPositionSizer:
             # Calculate correlation adjustment
             correlation_adjustment = self._calculate_correlation_adjustment(symbol, current_positions)
             
+            # Calculate low-cap momentum adjustment
+            low_cap_adjustment = self._calculate_low_cap_adjustment(
+                entry_price, 
+                technical_signals.get('volume_data', {}).get('current_volume', 0),
+                current_positions
+            )
+            
             # Base position size using portfolio risk
             base_risk_amount = portfolio_value * self.max_portfolio_risk
             base_position_shares = base_risk_amount / risk_per_share
@@ -90,25 +107,27 @@ class EnhancedPositionSizer:
             # Apply Kelly Criterion
             kelly_position_value = portfolio_value * kelly_fraction
             
-            # Apply adjustments
+            # Apply all adjustments
             adjusted_position_value = min(base_position_value, kelly_position_value)
             adjusted_position_value *= volatility_adjustment
             adjusted_position_value *= confidence_adjustment
             adjusted_position_value *= correlation_adjustment
+            adjusted_position_value *= low_cap_adjustment  # New low-cap adjustment
             
-            # Apply maximum position limits
+            # Apply maximum position limits (higher for low-caps)
             max_position_value = portfolio_value * self.max_position_size
             final_position_value = min(adjusted_position_value, max_position_value)
             
-            # Ensure minimum trade size
-            min_trade_value = 1000  # $1000 minimum
+            # Lower minimum trade size for low-cap momentum
+            min_trade_value = 500 if entry_price <= 3.0 else 1000
             if final_position_value < min_trade_value:
                 final_position_value = 0
                 reasoning = f"Position too small (${final_position_value:.0f} < ${min_trade_value})"
             else:
-                reasoning = self._generate_sizing_reasoning(
+                reasoning = self._generate_enhanced_sizing_reasoning(
                     base_position_value, kelly_position_value, volatility_adjustment,
-                    confidence_adjustment, correlation_adjustment, final_position_value
+                    confidence_adjustment, correlation_adjustment, low_cap_adjustment, 
+                    final_position_value, entry_price
                 )
             
             # Calculate final metrics
@@ -199,21 +218,53 @@ class EnhancedPositionSizer:
             return 0.05  # Conservative default
     
     def _calculate_confidence_adjustment(self, confidence: float) -> float:
-        """Calculate position size adjustment based on signal confidence."""
+        """Calculate position size adjustment based on signal confidence for low-cap momentum."""
         # Normalize confidence to 0-1 scale
         normalized_confidence = confidence / 10.0
         
-        # Conservative scaling: high confidence allows larger positions
-        if normalized_confidence >= 0.8:
-            return 1.2  # 20% increase for very high confidence
+        # More aggressive scaling for momentum trading
+        if normalized_confidence >= 0.9:
+            return 1.5  # 50% increase for extremely high confidence
+        elif normalized_confidence >= 0.8:
+            return 1.3  # 30% increase for very high confidence
         elif normalized_confidence >= 0.7:
-            return 1.1  # 10% increase for high confidence
+            return 1.15  # 15% increase for high confidence
         elif normalized_confidence >= 0.6:
             return 1.0  # Normal sizing for medium confidence
         elif normalized_confidence >= 0.5:
             return 0.8  # 20% reduction for low confidence
         else:
             return 0.6  # 40% reduction for very low confidence
+    
+    def _calculate_low_cap_adjustment(self, entry_price: float, volume: int, 
+                                    current_positions: List[Dict] = None) -> float:
+        """Calculate position size adjustment for low-cap momentum characteristics."""
+        adjustment = 1.0
+        
+        # Price-based adjustment (favor lower prices for momentum)
+        if entry_price <= 3.0:
+            adjustment += self.sub_3_dollar_boost  # 10% boost for sub-$3 stocks
+        elif entry_price <= 5.0:
+            adjustment += 0.05  # 5% boost for $3-5 stocks
+        
+        # Volume confirmation adjustment
+        if volume >= self.min_volume_threshold * 3:  # 6M+ volume
+            adjustment += 0.10  # 10% boost for high volume
+        elif volume >= self.min_volume_threshold * 2:  # 4M+ volume
+            adjustment += 0.05  # 5% boost for good volume
+        
+        # Check sub-$3 exposure limits
+        if entry_price <= 3.0 and current_positions:
+            sub_3_exposure = sum(pos.get('value', 0) for pos in current_positions 
+                               if pos.get('price', 0) <= 3.0)
+            portfolio_value = sum(pos.get('value', 0) for pos in current_positions)
+            
+            if portfolio_value > 0:
+                current_sub_3_pct = sub_3_exposure / portfolio_value
+                if current_sub_3_pct >= self.max_sub_3_exposure:
+                    adjustment *= 0.5  # Reduce by 50% if at sub-$3 limit
+        
+        return adjustment
     
     def _calculate_correlation_adjustment(self, symbol: str, current_positions: List[Dict] = None) -> float:
         """Calculate position size adjustment based on portfolio correlation."""
@@ -371,6 +422,45 @@ class EnhancedPositionSizer:
             reasoning_parts.append(f"Correlation adjustment: {corr_adj:.2f}x")
         
         reasoning_parts.append(f"Final position: ${final_value:.0f}")
+        
+        return " | ".join(reasoning_parts)
+    
+    def _generate_enhanced_sizing_reasoning(self, base_value: float, kelly_value: float,
+                                          vol_adj: float, conf_adj: float, corr_adj: float,
+                                          low_cap_adj: float, final_value: float, 
+                                          entry_price: float) -> str:
+        """Generate enhanced reasoning for low-cap momentum position sizing."""
+        reasoning_parts = []
+        
+        reasoning_parts.append(f"Base risk sizing: ${base_value:.0f}")
+        reasoning_parts.append(f"Kelly Criterion: ${kelly_value:.0f}")
+        
+        if vol_adj != 1.0:
+            adj_desc = "reduced" if vol_adj < 1.0 else "increased"
+            reasoning_parts.append(f"Volatility {adj_desc}: {vol_adj:.2f}x")
+        
+        if conf_adj != 1.0:
+            adj_desc = "reduced" if conf_adj < 1.0 else "boosted"
+            reasoning_parts.append(f"Confidence {adj_desc}: {conf_adj:.2f}x")
+        
+        if corr_adj != 1.0:
+            reasoning_parts.append(f"Correlation adjustment: {corr_adj:.2f}x")
+        
+        if low_cap_adj != 1.0:
+            if entry_price <= 3.0:
+                reasoning_parts.append(f"Sub-$3 momentum boost: {low_cap_adj:.2f}x")
+            else:
+                reasoning_parts.append(f"Low-cap adjustment: {low_cap_adj:.2f}x")
+        
+        reasoning_parts.append(f"Final position: ${final_value:.0f} ({final_value/1000:.1f}k)")
+        
+        # Add price context
+        if entry_price <= 1.0:
+            reasoning_parts.append("(Penny stock - high volatility expected)")
+        elif entry_price <= 3.0:
+            reasoning_parts.append("(Sub-$3 momentum play)")
+        elif entry_price <= 5.0:
+            reasoning_parts.append("(Low-cap growth candidate)")
         
         return " | ".join(reasoning_parts)
     

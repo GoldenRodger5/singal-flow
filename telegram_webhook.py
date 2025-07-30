@@ -74,33 +74,82 @@ async def root():
         "webhook": "Ready for instant responses"
     }
 
-@app.post("/webhook")
-async def telegram_webhook(request: Request):
-    """Handle incoming Telegram webhooks (button clicks)."""
+@app.post("/automation-started")
+async def automation_started(request: Request):
+    """Handle automation startup notification."""
     try:
         data = await request.json()
-        print(f"📨 Received webhook: {json.dumps(data, indent=2)}")
+        mode = data.get("mode", "unknown")
+        timestamp = data.get("timestamp", datetime.now().isoformat())
+        market_open = data.get("market_open", False)
         
-        # Handle callback queries (button clicks)
-        if "callback_query" in data:
-            callback_query = data["callback_query"]
+        market_status = "� MARKET OPEN" if market_open else "🔴 Market Closed"
+        
+        message = f"""🚀 **FULL AUTOMATION ACTIVATED**
+        
+🤖 **Mode**: {mode.upper()}
+⏰ **Started**: {datetime.fromisoformat(timestamp.replace('Z', '+00:00')).strftime('%H:%M:%S')}
+📈 **Market**: {market_status}
+
+🎯 **System Status**:
+✅ AI Learning Engine: ACTIVE
+✅ Market Monitor: RUNNING  
+✅ Auto-Execution: ENABLED
+✅ Telegram Alerts: LIVE
+
+⚡ **Auto-Trading Rules**:
+• Min Confidence: 65%
+• Max Daily Trades: 50
+• Max Daily Loss: 2.5%
+• Kelly Criterion Sizing: ON
+
+🛑 Send /stop to pause automation
+📊 Send /status for current positions"""
+
+        await bot.send_message(message)
+        return {"status": "notification_sent"}
+        
+    except Exception as e:
+        print(f"❌ Automation notification error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/webhook/telegram")
+async def telegram_webhook(request: Request):
+    """Handle incoming Telegram webhook requests."""
+    try:
+        body = await request.json()
+        
+        if "callback_query" in body:
+            # Handle button clicks
+            callback_query = body["callback_query"]
             callback_data = callback_query["data"]
             callback_query_id = callback_query["id"]
+            user_id = callback_query["from"]["id"]
             
             print(f"🔘 Button clicked: {callback_data}")
             
-            # Process the button click
-            await handle_callback(callback_data, callback_query_id)
+            # Process button action
+            result = await handle_callback(callback_data, callback_query_id)
             
-        # Handle regular messages
-        elif "message" in data:
-            message = data["message"]
+            # Send response message
+            await bot.send_message(result.get("message", "✅ Action completed"))
+            
+            return {"status": "success", "action": callback_data}
+            
+        elif "message" in body:
+            # Handle regular messages
+            message = body["message"]
             text = message.get("text", "")
+            user_id = message["from"]["id"]
             
             if text.startswith("/"):
-                await handle_command(text)
+                # Handle commands
+                response = await handle_command(text)
+                await bot.send_message(response)
+            
+            return {"status": "message_received"}
         
-        return {"status": "ok"}
+        return {"status": "ignored"}
         
     except Exception as e:
         print(f"❌ Webhook error: {e}")

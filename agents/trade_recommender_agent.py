@@ -9,7 +9,7 @@ from loguru import logger
 
 from services.config import Config
 from services.indicators import TechnicalIndicators
-from services.ai_learning_engine import AILearningEngine, TradePrediction, DecisionContext
+from services.ai_learning_engine import AILearningEngine, TradePrediction
 from services.enhanced_decision_logger import EnhancedDecisionLogger, DecisionContext as LoggerContext
 
 # Import enhanced components
@@ -17,6 +17,7 @@ try:
     from services.market_regime_detector import MarketRegimeDetector
     from services.enhanced_indicators import EnhancedIndicators
     from services.enhanced_position_sizer import EnhancedPositionSizer
+    from services.momentum_multiplier import MomentumMultiplier
     ENHANCED_AVAILABLE = True
 except ImportError:
     logger.warning("Enhanced components not available in trade recommender")
@@ -42,11 +43,13 @@ class TradeRecommenderAgent:
             self.regime_detector = self.learning_engine.regime_detector
             self.enhanced_indicators = self.learning_engine.enhanced_indicators
             self.position_sizer = self.learning_engine.position_sizer
+            self.momentum_multiplier = MomentumMultiplier()  # NEW: Momentum multiplier
             logger.info("Enhanced trade recommender components initialized")
         else:
             self.regime_detector = None
             self.enhanced_indicators = None
             self.position_sizer = None
+            self.momentum_multiplier = None
             logger.warning("Using basic trade recommender without enhanced components")
         
     async def evaluate_setup(self, setup: Dict[str, Any], sentiment: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -223,7 +226,7 @@ class TradeRecommenderAgent:
         return signals
     
     def _calculate_comprehensive_confidence(self, setup: Dict[str, Any], sentiment: Dict[str, Any]) -> float:
-        """Calculate comprehensive confidence score incorporating all factors."""
+        """Calculate comprehensive confidence score incorporating all factors including momentum multiplier."""
         try:
             # Start with base technical confidence
             base_confidence = setup.get('confidence', 0)
@@ -246,6 +249,22 @@ class TradeRecommenderAgent:
             # Market volatility bonus
             volatility_bonus = 0.3 if setup.get('is_volatile_session', False) else 0
             
+            # NEW: Momentum multiplier boost for explosive potential
+            momentum_bonus = 0.0
+            if self.momentum_multiplier and setup.get('price_data') and setup.get('volume_data'):
+                try:
+                    momentum_data = self.momentum_multiplier.calculate_momentum_multiplier(
+                        setup.get('price_data', {}),
+                        setup.get('volume_data', {})
+                    )
+                    
+                    # Add significant bonus for explosive momentum (up to +2.5 points)
+                    if momentum_data.get('explosive_potential', False):
+                        momentum_bonus = min(2.5, momentum_data.get('momentum_multiplier', 0) * 0.25)
+                        logger.info(f"Explosive momentum detected: +{momentum_bonus:.1f} confidence bonus")
+                except Exception as e:
+                    logger.warning(f"Error calculating momentum bonus: {e}")
+            
             # Calculate final confidence
             final_confidence = (
                 base_confidence +
@@ -253,7 +272,8 @@ class TradeRecommenderAgent:
                 rr_bonus +
                 volume_bonus +
                 signal_bonus +
-                volatility_bonus
+                volatility_bonus +
+                momentum_bonus  # NEW: momentum multiplier bonus
             )
             
             # Normalize to 0-10 scale
@@ -281,32 +301,62 @@ class TradeRecommenderAgent:
             return 0.0
     
     def _calculate_position_size(self, entry_price: float, confidence: float) -> Dict[str, Any]:
-        """Calculate appropriate position size based on confidence and risk management."""
+        """Calculate appropriate position size based on confidence, risk management, and momentum."""
         try:
-            # Base position size as percentage of account
-            base_size_percent = self.config.POSITION_SIZE_PERCENT or 0.1  # 10% default
-            
-            # Adjust based on confidence (scale 0.5x to 1.5x)
-            confidence_multiplier = 0.5 + (confidence / 10.0)
-            
-            # Final position size percentage
-            position_size_percent = base_size_percent * confidence_multiplier
-            
-            # Ensure reasonable limits
-            position_size_percent = max(0.02, min(0.15, position_size_percent))  # 2-15%
-            
-            return {
-                'percentage': position_size_percent,
-                'confidence_multiplier': confidence_multiplier,
-                'max_risk_per_trade': position_size_percent * 0.02  # 2% max risk
-            }
+            # Use enhanced position sizer if available
+            if self.position_sizer:
+                # For enhanced position sizing with momentum consideration
+                base_size_percent = getattr(self.config, 'POSITION_SIZE_PERCENT', 0.25)  # 25% base for low-cap
+                max_size_percent = getattr(self.config, 'MAX_POSITION_SIZE_PERCENT', 0.50)  # 50% max
+                
+                # Confidence-based adjustment (scale 0.6x to 1.8x for aggressive momentum)
+                confidence_multiplier = 0.6 + (confidence / 10.0) * 1.2
+                
+                # Sub-$3 stock boost for explosive potential
+                if entry_price <= 3.0:
+                    sub_3_boost = getattr(self.config, 'SUB_3_DOLLAR_POSITION_BOOST', 0.10)
+                    confidence_multiplier += sub_3_boost
+                    logger.info(f"Sub-$3 position boost applied: +{sub_3_boost:.1f}")
+                
+                # Final position size percentage
+                position_size_percent = base_size_percent * confidence_multiplier
+                
+                # Apply maximum limits for risk management
+                position_size_percent = max(0.05, min(max_size_percent, position_size_percent))
+                
+                return {
+                    'percentage': position_size_percent,
+                    'confidence_multiplier': confidence_multiplier,
+                    'max_risk_per_trade': position_size_percent * 0.06,  # 6% max risk for momentum
+                    'sub_3_boost': entry_price <= 3.0,
+                    'enhanced_sizing': True
+                }
+            else:
+                # Fallback to basic sizing
+                base_size_percent = getattr(self.config, 'POSITION_SIZE_PERCENT', 0.10)  # 10% default
+                
+                # Adjust based on confidence (scale 0.5x to 1.5x)
+                confidence_multiplier = 0.5 + (confidence / 10.0)
+                
+                # Final position size percentage
+                position_size_percent = base_size_percent * confidence_multiplier
+                
+                # Ensure reasonable limits
+                position_size_percent = max(0.02, min(0.15, position_size_percent))  # 2-15%
+                
+                return {
+                    'percentage': position_size_percent,
+                    'confidence_multiplier': confidence_multiplier,
+                    'max_risk_per_trade': position_size_percent * 0.02,  # 2% max risk
+                    'enhanced_sizing': False
+                }
             
         except Exception as e:
             logger.error(f"Error calculating position size: {e}")
-            return {'percentage': 0.05, 'confidence_multiplier': 1.0, 'max_risk_per_trade': 0.01}
+            return {'percentage': 0.05, 'confidence_multiplier': 1.0, 'max_risk_per_trade': 0.01, 'enhanced_sizing': False}
     
     def _calculate_trade_levels(self, setup: Dict[str, Any], confidence: float) -> Dict[str, Any]:
-        """Calculate entry, stop loss, and take profit levels."""
+        """Calculate entry, stop loss, and take profit levels with momentum-adjusted targets."""
         try:
             current_price = setup.get('current_price', 0)
             risk_reward = setup.get('risk_reward', {})
@@ -315,15 +365,40 @@ class TradeRecommenderAgent:
             stop_loss = risk_reward.get('stop_loss', entry * 0.97)
             take_profit = risk_reward.get('take_profit', entry * 1.04)
             
+            # NEW: Get momentum multiplier adjustment for profit targets
+            profit_adjustment = 1.0
+            if self.momentum_multiplier and setup.get('price_data') and setup.get('volume_data'):
+                try:
+                    momentum_data = self.momentum_multiplier.calculate_momentum_multiplier(
+                        setup.get('price_data', {}),
+                        setup.get('volume_data', {})
+                    )
+                    profit_adjustment = momentum_data.get('profit_target_adjustment', 1.0)
+                    
+                    if profit_adjustment > 1.0:
+                        logger.info(f"Momentum multiplier boosting profit target by {profit_adjustment:.1f}x")
+                except Exception as e:
+                    logger.warning(f"Error applying momentum adjustment: {e}")
+            
             # Adjust levels based on confidence
             if confidence >= 8.0:
                 # Higher confidence: tighter stop, higher target
                 stop_loss = max(stop_loss, entry * 0.98)
-                take_profit = min(take_profit * 1.1, entry * 1.06)
+                take_profit = min(take_profit * 1.1, entry * 1.06) * profit_adjustment  # Apply momentum
             elif confidence <= 6.0:
                 # Lower confidence: wider stop, conservative target
                 stop_loss = min(stop_loss, entry * 0.96)
-                take_profit = max(take_profit * 0.9, entry * 1.02)
+                take_profit = max(take_profit * 0.9, entry * 1.02) * profit_adjustment  # Apply momentum
+            else:
+                # Normal confidence
+                take_profit = take_profit * profit_adjustment  # Apply momentum adjustment
+            
+            # For low-cap momentum stocks, allow more aggressive targets
+            if current_price <= 3.0 and profit_adjustment >= 1.5:
+                # Sub-$3 explosive momentum: allow very aggressive targets
+                max_target_multiplier = 1.25 if current_price <= 1.0 else 1.15
+                take_profit = min(take_profit, entry * max_target_multiplier)
+                logger.info(f"Sub-$3 explosive momentum: target adjusted to ${take_profit:.2f}")
             
             # Calculate actual risk/reward
             risk = entry - stop_loss
@@ -336,20 +411,22 @@ class TradeRecommenderAgent:
                 'take_profit': round(take_profit, 2),
                 'risk_amount': round(risk, 2),
                 'reward_amount': round(reward, 2),
-                'risk_reward_ratio': round(actual_rr, 2)
+                'risk_reward_ratio': round(actual_rr, 2),
+                'momentum_adjustment': profit_adjustment  # NEW: for tracking
             }
             
         except Exception as e:
             logger.error(f"Error calculating trade levels: {e}")
             return {
                 'entry': 0, 'stop_loss': 0, 'take_profit': 0,
-                'risk_amount': 0, 'reward_amount': 0, 'risk_reward_ratio': 0
+                'risk_amount': 0, 'reward_amount': 0, 'risk_reward_ratio': 0,
+                'momentum_adjustment': 1.0
             }
     
     def _calculate_expected_move(self, setup: Dict[str, Any], sentiment: Dict[str, Any]) -> float:
         """Calculate expected price move percentage."""
         try:
-            base_move = self.config.MIN_EXPECTED_MOVE  # 3% default
+            base_move = self.config.MIN_EXPECTED_MOVE  # 8% default for explosive moves
             
             # Adjust based on volatility indicators
             if setup.get('is_volatile_session', False):
@@ -442,28 +519,40 @@ class TradeRecommenderAgent:
     def _validate_recommendation(self, recommendation: Dict[str, Any]) -> bool:
         """Final validation of the recommendation."""
         try:
-            # Check minimum confidence
+            # Check minimum confidence (lower for paper trading data collection)
+            min_confidence = (self.config.PAPER_TRADING_MIN_CONFIDENCE 
+                            if hasattr(self.config, 'PAPER_TRADING_MIN_CONFIDENCE') and self.config.PAPER_TRADING
+                            else self.config.MIN_CONFIDENCE_SCORE)
+            
             confidence = recommendation.get('confidence', 0)
-            if confidence < self.config.MIN_CONFIDENCE_SCORE:
-                logger.warning(f"Confidence {confidence} < minimum {self.config.MIN_CONFIDENCE_SCORE}")
+            if confidence < min_confidence:
+                logger.warning(f"Confidence {confidence} < minimum {min_confidence}")
                 return False
             
-            # Check minimum R:R ratio
+            # Check minimum R:R ratio (more flexible for momentum trades)
             rr_ratio = recommendation.get('risk_reward_ratio', 0)
-            if rr_ratio < self.config.RR_THRESHOLD:
-                logger.warning(f"R:R ratio {rr_ratio} < threshold {self.config.RR_THRESHOLD}")
+            min_rr = self.config.RR_THRESHOLD
+            
+            # Allow lower R:R for high-confidence momentum plays
+            if confidence >= 8.5:
+                min_rr *= 0.8  # 20% reduction for high confidence
+            
+            if rr_ratio < min_rr:
+                logger.warning(f"R:R ratio {rr_ratio} < threshold {min_rr}")
                 return False
             
-            # Check price range
+            # Check price range (updated for low-cap focus)
             entry_price = recommendation.get('entry', 0)
             if not (self.config.TICKER_PRICE_MIN <= entry_price <= self.config.TICKER_PRICE_MAX):
-                logger.warning(f"Entry price {entry_price} outside range [{self.config.TICKER_PRICE_MIN}, {self.config.TICKER_PRICE_MAX}]")
+                logger.warning(f"Entry price {entry_price} outside low-cap range [{self.config.TICKER_PRICE_MIN}, {self.config.TICKER_PRICE_MAX}]")
                 return False
             
-            # Check position size is reasonable
+            # Check position size is reasonable (updated for higher limits)
             position_size = recommendation.get('position_size', {}).get('percentage', 0)
-            if position_size <= 0 or position_size > 0.2:  # Max 20%
-                logger.warning(f"Position size {position_size} outside valid range (0, 0.2]")
+            max_position = getattr(self.config, 'MAX_POSITION_SIZE_PERCENT', 0.50)
+            
+            if position_size <= 0 or position_size > max_position:
+                logger.warning(f"Position size {position_size} outside valid range (0, {max_position}]")
                 return False
             
             # Check trade levels are logical
@@ -560,12 +649,54 @@ class TradeRecommenderAgent:
             if current_price == 0:
                 return None
             
+            # Enhanced Technical Analysis Integration
+            enhanced_analysis = {}
+            try:
+                from services.dynamic_screener_enhanced import DynamicScreener
+                enhanced_screener = DynamicScreener()
+                
+                # Prepare price data for enhanced analysis
+                price_data = {
+                    'highs': setup.get('high_prices', []),
+                    'lows': setup.get('low_prices', []), 
+                    'closes': setup.get('close_prices', []),
+                    'volumes': setup.get('volumes', [])
+                }
+                
+                # Get enhanced technical analysis
+                if any(len(data) >= 20 for data in price_data.values()):
+                    enhanced_analysis = await enhanced_screener.analyze_with_technical_indicators(ticker, price_data)
+                    
+                    # Log enhanced analysis
+                    await self.decision_logger.log_reasoning_step(
+                        decision_id, 'enhanced_technical_analysis',
+                        {
+                            'momentum_score': enhanced_analysis.get('momentum_score', 0),
+                            'breakout_probability': enhanced_analysis.get('breakout_probability', 0),
+                            'williams_r_strength': enhanced_analysis.get('williams_r', {}).get('momentum_strength', 0),
+                            'squeeze_active': enhanced_analysis.get('bollinger_squeeze', {}).get('in_squeeze', False),
+                            'squeeze_strength': enhanced_analysis.get('bollinger_squeeze', {}).get('squeeze_strength', 0),
+                            'recommendation': enhanced_analysis.get('recommendation', 'NEUTRAL'),
+                            'signals': enhanced_analysis.get('signals', [])
+                        },
+                        enhanced_analysis.get('momentum_score', 0) * 0.15  # 15% impact on final score
+                    )
+                    
+                    logger.info(f"Enhanced analysis for {ticker}: "
+                               f"Momentum={enhanced_analysis.get('momentum_score', 0):.1f}, "
+                               f"Breakout={enhanced_analysis.get('breakout_probability', 0):.0f}%")
+                
+            except Exception as e:
+                logger.warning(f"Enhanced technical analysis failed for {ticker}: {e}")
+                enhanced_analysis = {}
+            
             # Log technical analysis reasoning
             await self.decision_logger.log_technical_analysis(decision_id, {
                 'rsi': setup.get('rsi_data', {}),
                 'vwap': setup.get('vwap_data', {}),
                 'macd': setup.get('macd_data', {}),
-                'volume_data': setup.get('volume_data', {})
+                'volume_data': setup.get('volume_data', {}),
+                'enhanced_analysis': enhanced_analysis
             })
             
             # Log sentiment analysis reasoning
@@ -593,6 +724,51 @@ class TradeRecommenderAgent:
             ai_confidence = self.learning_engine.get_adaptive_confidence_score(
                 technical_signals, sentiment_signals, market_context
             )
+            
+            # Enhance confidence with technical indicators if available
+            if enhanced_analysis:
+                momentum_score = enhanced_analysis.get('momentum_score', 0)
+                breakout_probability = enhanced_analysis.get('breakout_probability', 0)
+                
+                # Boost confidence for strong momentum + breakout setups
+                if momentum_score >= 7.5 and breakout_probability >= 70:
+                    ai_confidence = min(ai_confidence + 1.5, 10.0)  # Max boost
+                    await self.decision_logger.log_reasoning_step(
+                        decision_id, 'enhanced_momentum_boost',
+                        {
+                            'momentum_score': momentum_score,
+                            'breakout_probability': breakout_probability,
+                            'confidence_boost': 1.5,
+                            'reasoning': 'Strong momentum + high breakout probability detected'
+                        },
+                        1.5
+                    )
+                elif momentum_score >= 6.5 and breakout_probability >= 50:
+                    ai_confidence = min(ai_confidence + 0.8, 10.0)  # Moderate boost
+                    await self.decision_logger.log_reasoning_step(
+                        decision_id, 'moderate_momentum_boost',
+                        {
+                            'momentum_score': momentum_score,
+                            'breakout_probability': breakout_probability,
+                            'confidence_boost': 0.8,
+                            'reasoning': 'Good momentum with breakout potential'
+                        },
+                        0.8
+                    )
+                
+                # Check for squeeze setups
+                squeeze_data = enhanced_analysis.get('bollinger_squeeze', {})
+                if squeeze_data.get('in_squeeze', False) and squeeze_data.get('squeeze_strength', 0) >= 7:
+                    ai_confidence = min(ai_confidence + 0.5, 10.0)
+                    await self.decision_logger.log_reasoning_step(
+                        decision_id, 'squeeze_setup_bonus',
+                        {
+                            'squeeze_strength': squeeze_data.get('squeeze_strength', 0),
+                            'confidence_boost': 0.5,
+                            'reasoning': 'High-tension Bollinger squeeze detected'
+                        },
+                        0.5
+                    )
             
             # Log confidence calculation
             await self.decision_logger.log_reasoning_step(
@@ -632,7 +808,8 @@ class TradeRecommenderAgent:
                 'sentiment_signals': sentiment_signals,
                 'market_context': market_context,
                 'adaptive_thresholds': adaptive_thresholds,
-                'decision_id': decision_id
+                'decision_id': decision_id,
+                'enhanced_analysis': enhanced_analysis  # Include enhanced technical analysis
             }
             
             # Calculate position size using AI confidence
@@ -795,11 +972,11 @@ class TradeRecommenderAgent:
         rsi_value = setup.get('rsi_data', {}).get('rsi_value', 50)
         vwap_distance = setup.get('vwap_data', {}).get('distance_from_vwap', 0)
         
-        base_move = 0.03  # 3% base expectation
+        base_move = 0.06  # 6% base expectation for maximum profitability
         
         # Adjust for RSI oversold condition
         if rsi_value <= 30:
-            base_move += (30 - rsi_value) / 30 * 0.02  # Up to 2% additional
+            base_move += (30 - rsi_value) / 30 * 0.04  # Up to 4% additional for explosive moves
         
         # Adjust for VWAP distance
         if vwap_distance < -0.02:  # 2% below VWAP
@@ -808,7 +985,7 @@ class TradeRecommenderAgent:
         # Adjust for sentiment
         sentiment_score = sentiment.get('sentiment_score', 0)
         if sentiment_score > 0.3:
-            base_move += sentiment_score * 0.02  # Up to 2% from strong sentiment
+            base_move += sentiment_score * 0.04  # Up to 4% from strong sentiment for bigger moves
         
         # Adjust for confidence
         confidence_multiplier = confidence / 7.0  # Scale based on confidence
@@ -895,19 +1072,38 @@ class TradeRecommenderAgent:
     
     def _validate_recommendation(self, recommendation: Dict[str, Any], 
                                adaptive_thresholds: Dict[str, float]) -> bool:
-        """Enhanced validation using adaptive thresholds."""
+        """Enhanced validation using adaptive thresholds and enhanced analysis."""
         try:
             # Check adaptive minimum confidence
             confidence = recommendation.get('confidence', 0)
             min_confidence = adaptive_thresholds.get('min_confidence_score', 7.0)
+            
+            # Enhanced analysis can lower confidence requirements for high-quality setups
+            enhanced_analysis = recommendation.get('enhanced_analysis', {})
+            if enhanced_analysis:
+                momentum_score = enhanced_analysis.get('momentum_score', 0)
+                breakout_probability = enhanced_analysis.get('breakout_probability', 0)
+                
+                # Allow lower confidence for exceptional setups
+                if momentum_score >= 8 and breakout_probability >= 80:
+                    min_confidence = max(min_confidence - 1.0, 6.0)  # Reduce by 1.0, min 6.0
+                elif momentum_score >= 7 and breakout_probability >= 70:
+                    min_confidence = max(min_confidence - 0.5, 6.5)  # Reduce by 0.5, min 6.5
+            
             if confidence < min_confidence:
-                logger.warning(f"Confidence {confidence} < adaptive minimum {min_confidence}")
+                logger.warning(f"Confidence {confidence} < adjusted minimum {min_confidence}")
                 return False
             
-            # Check minimum R:R ratio
+            # Check minimum R:R ratio - more flexible for low-cap momentum
             rr_ratio = recommendation.get('risk_reward_ratio', 0)
-            if rr_ratio < self.config.RR_THRESHOLD:
-                logger.warning(f"R:R ratio {rr_ratio} < threshold {self.config.RR_THRESHOLD}")
+            min_rr = self.config.RR_THRESHOLD
+            
+            # Enhanced momentum setups can have lower R:R requirements
+            if enhanced_analysis and enhanced_analysis.get('momentum_score', 0) >= 7.5:
+                min_rr = max(min_rr - 0.5, 1.5)  # Reduce R:R requirement for strong momentum
+            
+            if rr_ratio < min_rr:
+                logger.warning(f"R:R ratio {rr_ratio} < adjusted threshold {min_rr}")
                 return False
             
             # Check price range
@@ -916,17 +1112,38 @@ class TradeRecommenderAgent:
                 logger.warning(f"Entry price {entry_price} outside range [{self.config.TICKER_PRICE_MIN}, {self.config.TICKER_PRICE_MAX}]")
                 return False
             
-            # Check position size is reasonable
+            # Check position size - allow larger sizes for high-conviction enhanced setups
             position_size = recommendation.get('position_size', {}).get('percentage', 0)
-            if position_size <= 0 or position_size > 0.2:  # Max 20%
-                logger.warning(f"Position size {position_size} outside valid range (0, 0.2]")
+            max_position = 0.5 if entry_price < 3.0 else 0.3  # Higher limits for sub-$3 stocks
+            
+            # Further increase for exceptional setups
+            if enhanced_analysis and enhanced_analysis.get('recommendation', '').startswith('STRONG BUY'):
+                max_position = min(max_position + 0.1, 0.6)  # Increase by 10%, cap at 60%
+            
+            if position_size <= 0 or position_size > max_position:
+                logger.warning(f"Position size {position_size} outside valid range (0, {max_position}]")
                 return False
             
-            # Check if we have too many risk factors
+            # Check if we have too many risk factors - be more lenient for enhanced setups
             risk_factors = recommendation.get('risk_factors', [])
-            if len(risk_factors) > 3:
+            max_risk_factors = 4 if enhanced_analysis.get('momentum_score', 0) >= 7 else 3
+            
+            if len(risk_factors) > max_risk_factors:
                 logger.warning(f"Too many risk factors ({len(risk_factors)}) for trade")
                 return False
+            
+            # Additional validation for enhanced setups
+            if enhanced_analysis:
+                # Require minimum momentum for trades
+                if enhanced_analysis.get('momentum_score', 0) < 4.0:
+                    logger.warning("Enhanced analysis shows insufficient momentum")
+                    return False
+                
+                # Warn about conflicting signals
+                recommendation_text = enhanced_analysis.get('recommendation', '')
+                if 'PASS' in recommendation_text:
+                    logger.warning("Enhanced analysis recommends PASS")
+                    return False
             
             return True
             

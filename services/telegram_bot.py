@@ -7,6 +7,10 @@ import requests
 import asyncio
 from loguru import logger
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 class TelegramNotifier:
@@ -25,7 +29,7 @@ class TelegramNotifier:
             logger.info("Telegram bot notifications enabled")
     
     async def send_trading_signal(self, recommendation: Dict[str, Any], explanation: str) -> bool:
-        """Send a trading signal with interactive approval buttons."""
+        """Send a trading signal with interactive approval buttons optimized for low-cap momentum."""
         if not self.enabled:
             return False
             
@@ -42,29 +46,70 @@ class TelegramNotifier:
             profit_potential = ((take_profit - entry) / entry * 100) if entry > 0 else 0
             loss_potential = ((entry - stop_loss) / entry * 100) if entry > 0 else 0
             
-            message = f"🚀 *TRADING SIGNAL DETECTED*\n\n"
-            message += f"📊 *Symbol:* {ticker}\n"
+            # Enhanced messaging for low-cap momentum
+            if entry <= 3.0:
+                signal_type = "🔥 SUB-$3 MOMENTUM SIGNAL"
+                risk_emoji = "⚡"
+            elif entry <= 5.0:
+                signal_type = "🚀 LOW-CAP BREAKOUT SIGNAL"
+                risk_emoji = "📈"
+            else:
+                signal_type = "🎯 TRADING SIGNAL DETECTED"
+                risk_emoji = "📊"
+            
+            message = f"{signal_type}\n\n"
+            message += f"{risk_emoji} *Symbol:* {ticker}\n"
             message += f"🎯 *Action:* {action}\n"
             message += f"💰 *Entry:* ${entry:.2f}\n"
             message += f"🎯 *Target:* ${take_profit:.2f} (+{profit_potential:.1f}%)\n"
             message += f"🛑 *Stop Loss:* ${stop_loss:.2f} (-{loss_potential:.1f}%)\n"
-            message += f"📈 *Position Size:* ${position_size:.0f}\n"
-            message += f"⭐ *Confidence:* {confidence}/10\n\n"
-            message += f"🧠 *Analysis:*\n{explanation[:200]}..."
             
-            # Create inline keyboard with action buttons
+            # Position size display
+            if isinstance(position_size, dict):
+                pos_value = position_size.get('percentage', 0) * 10000  # Assume $10k portfolio
+                pos_pct = position_size.get('percentage', 0) * 100
+                message += f"📈 *Position:* ${pos_value:.0f} ({pos_pct:.1f}%)\n"
+            else:
+                message += f"📈 *Position Size:* ${position_size:.0f}\n"
+            
+            message += f"⭐ *Confidence:* {confidence:.1f}/10\n\n"
+            
+            # Add low-cap specific context
+            if entry <= 1.0:
+                message += f"⚠️ *Penny Stock:* High volatility expected\n"
+            elif entry <= 3.0:
+                message += f"💥 *Sub-$3 Play:* Momentum opportunity\n"
+            
+            # Calculate shares for context
+            if isinstance(position_size, dict):
+                shares = int(pos_value / entry) if entry > 0 else 0
+                message += f"📊 *Shares:* {shares:,}\n"
+            
+            message += f"🧠 *Analysis:*\n{explanation[:150]}..."
+            
+            # Create enhanced inline keyboard for low-cap momentum
             keyboard = {
                 "inline_keyboard": [
                     [
-                        {"text": "✅ Execute Trade", "callback_data": f"execute_{ticker}"},
+                        {"text": "🚀 EXECUTE TRADE", "callback_data": f"execute_{ticker}"},
                         {"text": "❌ Skip Trade", "callback_data": f"skip_{ticker}"}
+                    ],
+                    [
+                        {"text": "📈 Double Size", "callback_data": f"double_{ticker}"},
+                        {"text": "📉 Half Size", "callback_data": f"half_{ticker}"}
+                    ] if entry <= 5.0 else [  # Only for low-caps
+                        {"text": "⏸️ Pause Trading", "callback_data": "pause_trading"},
+                        {"text": "📊 Portfolio", "callback_data": "show_portfolio"}
                     ],
                     [
                         {"text": "⏸️ Pause Trading", "callback_data": "pause_trading"},
                         {"text": "📊 Portfolio", "callback_data": "show_portfolio"}
-                    ]
+                    ] if entry <= 5.0 else []
                 ]
             }
+            
+            # Remove empty arrays
+            keyboard["inline_keyboard"] = [row for row in keyboard["inline_keyboard"] if row]
             
             return await self._send_message(message, keyboard)
             

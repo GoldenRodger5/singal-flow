@@ -13,7 +13,6 @@ loguru>=0.7.0
 schedule>=1.2.0
 anthropic>=0.3.0
 openai>=0.28.0
-twilio>=8.0.0
 
 # Optional Performance Dependencies  
 numba>=0.58.0  # Faster numerical computations

@@ -10,6 +10,14 @@ from loguru import logger
 from services.data_provider import PolygonDataProvider
 from services.config import Config
 
+# Import optional momentum multiplier
+try:
+    from services.momentum_multiplier import MomentumMultiplier
+    MOMENTUM_MULTIPLIER_AVAILABLE = True
+except ImportError:
+    logger.warning("Momentum multiplier not available - using basic momentum scoring")
+    MOMENTUM_MULTIPLIER_AVAILABLE = False
+
 
 class DynamicScreener:
     """Screen stocks based on price, volume, and momentum criteria."""
@@ -18,6 +26,13 @@ class DynamicScreener:
         """Initialize the screener."""
         self.config = Config()
         self.watchlist_file = "data/watchlist_dynamic.json"
+        
+        # Initialize momentum multiplier if available
+        if MOMENTUM_MULTIPLIER_AVAILABLE:
+            self.momentum_multiplier = MomentumMultiplier()
+            logger.info("Momentum multiplier enabled for enhanced screening")
+        else:
+            self.momentum_multiplier = None
         
     async def screen_by_price_range(self) -> List[str]:
         """Screen stocks within the specified price range."""

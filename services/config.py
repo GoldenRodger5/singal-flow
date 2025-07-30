@@ -18,36 +18,74 @@ class Config:
     ALPACA_API_KEY = os.getenv('ALPACA_API_KEY')
     ALPACA_SECRET = os.getenv('ALPACA_SECRET')
     
-    # Twilio Configuration
-    TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-    TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
-    WHATSAPP_FROM = os.getenv('WHATSAPP_FROM', 'whatsapp:+14155238886')
-    WHATSAPP_TO = os.getenv('WHATSAPP_TO')
+    # Telegram Configuration (Primary notification method)
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
     
-    # Trading Parameters
-    TICKER_PRICE_MIN = float(os.getenv('TICKER_PRICE_MIN', 1))
-    TICKER_PRICE_MAX = float(os.getenv('TICKER_PRICE_MAX', 50))
-    RR_THRESHOLD = float(os.getenv('RR_THRESHOLD', 2.0))
-    MIN_EXPECTED_MOVE = float(os.getenv('MIN_EXPECTED_MOVE', 0.03))
-    TRADING_START_TIME = os.getenv('TRADING_START_TIME', '09:45')
-    TRADING_END_TIME = os.getenv('TRADING_END_TIME', '11:30')
+    # Trading Parameters - Optimized for Low-Cap Momentum Strategy
+    TICKER_PRICE_MIN = float(os.getenv('TICKER_PRICE_MIN', 0.75))  # Lowered for penny stocks
+    TICKER_PRICE_MAX = float(os.getenv('TICKER_PRICE_MAX', 10))    # Focused on low-cap range
+    RR_THRESHOLD = float(os.getenv('RR_THRESHOLD', 1.8))  # Trail after 2:1, let winners run
+    MIN_EXPECTED_MOVE = float(os.getenv('MIN_EXPECTED_MOVE', 0.08))  # 8% minimum for explosive moves
+    TRADING_START_TIME = os.getenv('TRADING_START_TIME', '09:00')  # Pre-market gaps
+    TRADING_END_TIME = os.getenv('TRADING_END_TIME', '16:00')      # Include power hour
+    
+    # Low-Cap Momentum Filters
+    MIN_DAILY_VOLUME = int(os.getenv('MIN_DAILY_VOLUME', 2000000))  # 2M minimum volume
+    MIN_RELATIVE_VOLUME = float(os.getenv('MIN_RELATIVE_VOLUME', 2.0))  # 2x average volume
+    MAX_FLOAT_SHARES = int(os.getenv('MAX_FLOAT_SHARES', 100000000))  # 100M max float
+    IDEAL_FLOAT_MIN = int(os.getenv('IDEAL_FLOAT_MIN', 10000000))   # 10M ideal min
+    IDEAL_FLOAT_MAX = int(os.getenv('IDEAL_FLOAT_MAX', 50000000))   # 50M ideal max
+    MIN_INTRADAY_RANGE = float(os.getenv('MIN_INTRADAY_RANGE', 0.05))  # 5% minimum volatility
     
     # System Configuration
     ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
     PAPER_TRADING = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
     
+    # Database Configuration (MongoDB Atlas)
+    MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb+srv://username:password@cluster.mongodb.net/')
+    MONGODB_NAME = os.getenv('MONGODB_NAME', 'signal_flow_trading')
+    MONGODB_CONNECTION_TIMEOUT = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 10000))  # 10 seconds
+    MONGODB_SERVER_TIMEOUT = int(os.getenv('MONGODB_SERVER_TIMEOUT', 10000))  # 10 seconds
+    
+    # Local Server Configuration
+    LOCAL_SERVER_PORT = int(os.getenv('LOCAL_SERVER_PORT', 8000))
+    ENABLE_LOCAL_WEBHOOKS = os.getenv('ENABLE_LOCAL_WEBHOOKS', 'true').lower() == 'true'
+    
+    # Telegram Configuration (Enhanced)
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+    
     # API URLs
     POLYGON_BASE_URL = os.getenv('POLYGON_BASE_URL', 'https://api.polygon.io')
     ALPACA_BASE_URL = os.getenv('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
     
-    # Trading Strategy Configuration - Dynamic Thresholds
-    RSI_OVERSOLD_THRESHOLD = 30  # Base threshold - will be dynamically adjusted
-    RSI_OVERBOUGHT_THRESHOLD = 70  # Base threshold - will be dynamically adjusted
-    VOLUME_SPIKE_MULTIPLIER = 2.0
-    MIN_CONFIDENCE_SCORE = 7.0  # Base confidence - will be dynamically adjusted
-    MAX_DAILY_TRADES = 5
-    POSITION_SIZE_PERCENT = 0.1  # Base position size - will be volatility adjusted
+    # Enhanced Position Sizing for Low-Cap Momentum (Paper Trading)
+    MAX_DAILY_TRADES = 100  # Massive increase for data collection during paper trading
+    MAX_DAILY_LOSS_PCT = 0.15  # 15% max daily loss for aggressive learning
+    POSITION_SIZE_PERCENT = 0.25  # Base 25% position size for low-cap momentum
+    MAX_POSITION_SIZE_PERCENT = 0.50  # Allow up to 50% for highest confidence trades
+    
+    # Sub-$3 Stock Limits (Higher risk tolerance for smaller stocks)
+    MAX_SUB_3_DOLLAR_EXPOSURE = 0.60  # Max 60% of portfolio in sub-$3 stocks
+    SUB_3_DOLLAR_POSITION_BOOST = 0.10  # Additional 10% position size for sub-$3 stocks
+    
+    # Trading Strategy Configuration - Low-Cap Momentum Optimized
+    RSI_OVERSOLD_THRESHOLD = 25  # More aggressive for volatile low-caps
+    RSI_OVERBOUGHT_THRESHOLD = 75  # More aggressive for volatile low-caps
+    VOLUME_SPIKE_MULTIPLIER = 3.0  # Require 3x volume spike for confirmation
+    MIN_CONFIDENCE_SCORE = 6.0  # Lowered for paper trading data collection
+    PAPER_TRADING_MIN_CONFIDENCE = 5.5  # Even lower for learning trades
+    
+    # Williams %R Configuration (Better than RSI for momentum)
+    WILLIAMS_R_OVERSOLD = -80
+    WILLIAMS_R_OVERBOUGHT = -20
+    WILLIAMS_R_ENABLED = True
+    
+    # Bollinger Band Squeeze Detection
+    BOLLINGER_SQUEEZE_ENABLED = True
+    BOLLINGER_SQUEEZE_THRESHOLD = 0.1  # Volatility contraction threshold
     
     # Market Regime Detection Configuration
     VOLATILITY_LOOKBACK_DAYS = 20
@@ -70,10 +108,23 @@ class Config:
     INTERACTIVE_TRADING_ENABLED = os.getenv('INTERACTIVE_TRADING_ENABLED', 'true').lower() == 'true'
     TRADE_CONFIRMATION_TIMEOUT = int(os.getenv('TRADE_CONFIRMATION_TIMEOUT', 30))  # seconds
     
-    # Data Configuration
-    WATCHLIST_SIZE = 50
-    DATA_REFRESH_INTERVAL = 120  # seconds
-    SCREENER_UPDATE_INTERVAL = 300  # seconds
+    # Enhanced Data Collection Configuration
+    WATCHLIST_SIZE = 100  # Doubled for more opportunities
+    DATA_REFRESH_INTERVAL = 60   # Faster refresh for momentum detection
+    SCREENER_UPDATE_INTERVAL = 180  # More frequent screening
+    
+    # Multi-Timeframe Trading Windows
+    POWER_HOUR_ENABLED = True
+    POWER_HOUR_START = "15:30"  # 3:30 PM
+    POWER_HOUR_END = "16:00"    # 4:00 PM
+    PREMARKET_ENABLED = True
+    PREMARKET_START = "09:00"   # 9:00 AM
+    PREMARKET_END = "09:30"     # 9:30 AM
+    
+    # Gap Trading Configuration
+    MIN_GAP_PERCENT = 3.0  # Minimum 3% gap for gap-and-go
+    MAX_GAP_PERCENT = 25.0  # Maximum 25% gap (avoid pump/dump)
+    GAP_VOLUME_CONFIRMATION = 5.0  # Require 5x volume on gaps
     
     @classmethod
     def validate_config(cls) -> Dict[str, Any]:
@@ -82,9 +133,8 @@ class Config:
             'POLYGON_API_KEY',
             'ALPACA_API_KEY',
             'ALPACA_SECRET',
-            'TWILIO_ACCOUNT_SID',
-            'TWILIO_AUTH_TOKEN',
-            'WHATSAPP_TO'
+            'TELEGRAM_BOT_TOKEN',
+            'TELEGRAM_CHAT_ID'
         ]
         
         missing_keys = []
