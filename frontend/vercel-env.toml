@@ -1,0 +1,5 @@
+RAILWAY_TRADING_URL = "https://web-production-3e19d.up.railway.app"
+MONGODB_URL = "your_mongodb_connection_string_here"
+OPENAI_API_KEY = "your_openai_api_key_here"
+ALPACA_API_KEY = "your_alpaca_api_key_here"
+POLYGON_API_KEY = "your_polygon_api_key_here"

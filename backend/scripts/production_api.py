@@ -20,6 +20,9 @@ from services.telegram_trading import telegram_trading
 # from services.ai_data_collector import ai_data_collector  # Disabled due to yfinance conflict
 
 # Import the main trading orchestrator
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 from main import SignalFlowOrchestrator
 
 # Initialize FastAPI app
@@ -301,18 +304,19 @@ async def get_recent_ai_signals(limit: int = 50, signal_type: str = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/ai/signals/performance")
-async def get_signal_performance_summary(days: int = 30):
-    """Get AI signal performance summary"""
-    try:
-        from services.ai_agent_integration import ai_agent_integration
-        
-        performance_report = await ai_agent_integration.get_signal_performance_report(days)
-        return JSONResponse(content=performance_report)
-        
-    except Exception as e:
-        logger.error(f"Failed to get signal performance: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# DISABLED: Missing ai_agent_integration service
+# @app.get("/api/ai/signals/performance")
+# async def get_signal_performance_summary(days: int = 30):
+#     """Get AI signal performance summary"""
+#     try:
+#         from services.ai_agent_integration import ai_agent_integration
+#         
+#         performance_report = await ai_agent_integration.get_signal_performance_report(days)
+#         return JSONResponse(content=performance_report)
+#         
+#     except Exception as e:
+#         logger.error(f"Failed to get signal performance: {e}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/ai/signals/analysis/{signal_id}")
@@ -356,38 +360,11 @@ async def get_signal_analysis(signal_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/ai/signals/manual-log")
-async def manually_log_signal(signal_data: Dict[str, Any]):
-    """Manually log an AI signal for testing"""
-    try:
-        from services.ai_agent_integration import ai_agent_integration
-        from services.ai_decision_tracker import SignalType
-        
-        # Validate required fields
-        required_fields = ['symbol', 'signal_type', 'confidence', 'reasoning']
-        for field in required_fields:
-            if field not in signal_data:
-                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
-        
-        # Process the signal
-        if signal_data['signal_type'].upper() == 'BUY':
-            signal_id = await ai_agent_integration.process_buy_signal(
-                symbol=signal_data['symbol'],
-                confidence=signal_data['confidence'],
-                technical_indicators=signal_data.get('technical_indicators', {}),
-                reasoning=signal_data['reasoning'],
-                risk_assessment=signal_data.get('risk_assessment', {'overall_risk': 0.5}),
-                expected_return=signal_data.get('expected_return', 0.05)
-            )
-        else:
-            signal_id = await ai_agent_integration.process_sell_signal(
-                symbol=signal_data['symbol'],
-                confidence=signal_data['confidence'],
-                technical_indicators=signal_data.get('technical_indicators', {}),
-                reasoning=signal_data['reasoning'],
-                risk_assessment=signal_data.get('risk_assessment', {'overall_risk': 0.5}),
-                expected_return=signal_data.get('expected_return', 0.05)
-            )
+# DISABLED: Missing ai_agent_integration service
+# @app.post("/api/ai/signals/manual-log")
+# async def manually_log_signal(signal_data: Dict[str, Any]):
+#     """Manually log an AI signal for testing"""
+#     return JSONResponse(content={'error': 'AI signal integration disabled - missing service'})
         
         return JSONResponse(content={
             'status': 'signal_logged',
@@ -400,63 +377,18 @@ async def manually_log_signal(signal_data: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/ai/signals/log-execution")
-async def log_signal_execution(execution_data: Dict[str, Any]):
-    """Log execution decision for a signal"""
-    try:
-        from services.ai_agent_integration import ai_agent_integration
-        
-        # Validate required fields
-        required_fields = ['signal_id', 'decision', 'reason']
-        for field in required_fields:
-            if field not in execution_data:
-                raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
-        
-        await ai_agent_integration.log_execution_decision(
-            signal_id=execution_data['signal_id'],
-            decision=execution_data['decision'],
-            reason=execution_data['reason'],
-            execution_details=execution_data.get('execution_details')
-        )
-        
-        return JSONResponse(content={
-            'status': 'execution_logged',
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to log execution: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# DISABLED: Missing ai_agent_integration service  
+# @app.post("/api/ai/signals/log-execution")
+# async def log_signal_execution(execution_data: Dict[str, Any]):
+#     """Log execution decision for a signal"""
+#     return JSONResponse(content={'error': 'AI signal integration disabled - missing service'})
 
 
-@app.get("/api/ai/tracking/status")
-async def get_ai_tracking_status():
-    """Get status of AI tracking system"""
-    try:
-        from services.enhanced_agent_wrapper import agent_tracking_manager
-        
-        tracking_stats = agent_tracking_manager.get_tracking_stats()
-        
-        # Get signal counts
-        total_signals = await db_manager.async_db.ai_signals.count_documents({})
-        total_analyses = await db_manager.async_db.ai_signal_analysis.count_documents({})
-        
-        # Get recent activity
-        recent_signals = await db_manager.async_db.ai_signals.count_documents({
-            'signal_timestamp': {'$gte': datetime.now(timezone.utc) - timedelta(hours=24)}
-        })
-        
-        return JSONResponse(content={
-            'tracking_stats': tracking_stats,
-            'total_signals': total_signals,
-            'total_analyses': total_analyses,
-            'recent_signals_24h': recent_signals,
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to get tracking status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# DISABLED: Missing enhanced_agent_wrapper service
+# @app.get("/api/ai/tracking/status")
+# async def get_ai_tracking_status():
+#     """Get status of AI tracking system"""
+#     return JSONResponse(content={'error': 'AI tracking disabled - missing service'})
 
 
 @app.get("/api/ai/learning/summary")

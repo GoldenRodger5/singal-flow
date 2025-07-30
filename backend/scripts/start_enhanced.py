@@ -21,6 +21,9 @@ async def main():
     
     try:
         # Import main orchestrator
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent.parent))
         from main import SignalFlowOrchestrator
         
         # Create orchestrator instance

@@ -243,6 +243,9 @@ class TelegramTradingService:
         """Trigger an immediate market scan."""
         try:
             # Import here to avoid circular imports
+            import sys
+            from pathlib import Path
+            sys.path.append(str(Path(__file__).parent.parent))
             from main import SignalFlowOrchestrator
             
             orchestrator = SignalFlowOrchestrator()

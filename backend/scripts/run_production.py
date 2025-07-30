@@ -11,6 +11,9 @@ from datetime import datetime
 from loguru import logger
 
 # Import main trading system
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
 from main import SignalFlowOrchestrator
 
 # Import FastAPI webhook system
