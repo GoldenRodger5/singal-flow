@@ -29,6 +29,11 @@ export default function EnhancedHoldings() {
   const fetchEnhancedHoldings = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/holdings`)
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`)
+      }
+      
       const data = await response.json()
       
       if (data.holdings && Array.isArray(data.holdings)) {
@@ -41,12 +46,13 @@ export default function EnhancedHoldings() {
         }))
         setHoldings(enhancedHoldings)
       } else {
-        // No holdings found - this is expected if MongoDB was purged
+        // No holdings found - this is expected if MongoDB was purged or no positions exist
         setHoldings([])
       }
     } catch (error) {
       console.error('Error fetching enhanced holdings:', error)
       // Set empty holdings on error - don't show mock data
+      // This is expected behavior when API is not available or no positions exist
       setHoldings([])
     } finally {
       setLoading(false)
