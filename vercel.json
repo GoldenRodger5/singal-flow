@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
+  "installCommand": "cd frontend && npm install",
+  "framework": "nextjs",
+  "rootDirectory": "frontend",
+  "env": {
+    "RAILWAY_TRADING_URL": "@railway-trading-url",
+    "MONGODB_URL": "@mongodb-url",
+    "OPENAI_API_KEY": "@openai-api-key",
+    "ALPACA_API_KEY": "@alpaca-api-key",
+    "POLYGON_API_KEY": "@polygon-api-key",
+    "BACKEND_URL": "https://web-production-3e19d.up.railway.app"
+  }
+}
