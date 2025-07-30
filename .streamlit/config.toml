@@ -3,31 +3,17 @@ headless = true
 port = 8501
 enableCORS = false
 enableXsrfProtection = false
-serverAddress = "0.0.0.0"
 
 [browser]
 gatherUsageStats = false
-serverPort = 8501
-
-[client]
-# Reduce browser permission requests and warnings
-caching = true
-displayEnabled = true
-showErrorDetails = false
-toolbarMode = "minimal"
 
 [runner]
-# Optimize for trading application
 magicEnabled = true
-installTracer = false
-fixMatplotlib = true
 
 [logger]
-# Reduce verbose logging to minimize console warnings
 level = "warning"
 
 [theme]
-# Dark theme optimized for trading dashboard
 primaryColor = "#00D4AA"
 backgroundColor = "#0E1117"
 secondaryBackgroundColor = "#262730"

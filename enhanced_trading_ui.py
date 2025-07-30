@@ -228,6 +228,18 @@ def render_enhanced_dashboard():
     status = fetch_system_status()
     if "error" in status:
         st.warning(f"⚠️ Limited functionality: {status['error']}")
+        st.info("💡 **Demo Mode**: Showing sample data while connecting to live system...")
+    else:
+        st.success("✅ Connected to Railway production system")
+    
+    # Debug info (temporary)
+    with st.expander("🔧 Debug Info"):
+        st.json(status)
+        st.write(f"**Trading URL**: {get_trading_system_url()}")
+        st.write(f"**LOCAL_MODE**: {LOCAL_MODE}")
+        st.write(f"**Environment Variables**:")
+        st.write(f"- WEB_MODE: {os.environ.get('WEB_MODE', 'Not set')}")
+        st.write(f"- RAILWAY_TRADING_URL: {os.environ.get('RAILWAY_TRADING_URL', 'Not set')}")
     
     # Top metrics row with real data
     render_top_metrics_real()
@@ -436,38 +448,65 @@ def get_fallback_signals():
 
 def render_holdings_page():
     """Render the current holdings page."""
+    st.markdown("## 📊 Current Holdings")
+    
     if ENHANCED_FEATURES_AVAILABLE:
         show_current_holdings()
     else:
-        st.error("Holdings dashboard not available")
+        st.info("💡 **Demo Mode**: Showing sample holdings data")
         render_basic_holdings()
 
 def render_ai_predictions_page():
     """Render the AI predictions page."""
+    st.markdown("## 🤖 AI Predictions")
+    
     if ENHANCED_FEATURES_AVAILABLE:
         show_ai_predictions()
     else:
-        st.error("AI predictions not available")
+        st.info("💡 **Demo Mode**: Showing sample AI predictions")
         render_basic_predictions()
 
 def render_controls_page():
     """Render the quick controls page."""
+    st.markdown("## 🎛️ Trading Controls")
+    
     if ENHANCED_FEATURES_AVAILABLE:
         render_enhanced_controls()
         st.markdown("---")
         show_current_settings()
     else:
-        st.error("Enhanced controls not available")
+        st.info("💡 **Demo Mode**: Basic controls available")
         render_basic_controls()
 
 def render_configuration_page():
     """Render the configuration page."""
     st.markdown("## ⚙️ System Configuration")
     
+    # Always show basic configuration
+    st.subheader("📡 Connection Status")
+    status = fetch_system_status()
+    if "error" in status:
+        st.error(f"Connection Error: {status['error']}")
+    else:
+        st.success("✅ Connected to Railway production system")
+    
+    st.subheader("🔧 Current Settings")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**System Mode**:", os.environ.get("SYSTEM_MODE", "paper_trading"))
+        st.write("**Environment**:", os.environ.get("ENVIRONMENT", "development"))
+        st.write("**Web Mode**:", os.environ.get("WEB_MODE", "false"))
+    
+    with col2:
+        st.write("**Trading URL**:", get_trading_system_url())
+        st.write("**Local Mode**:", LOCAL_MODE)
+        st.write("**Enhanced Features**:", ENHANCED_FEATURES_AVAILABLE)
+    
     if ENHANCED_FEATURES_AVAILABLE:
         show_current_settings()
     else:
-        st.warning("Dynamic configuration not available")
+        st.info("💡 Enhanced configuration requires local services")
     
     # Basic configuration options
     st.markdown("### 🔧 Basic Settings")
