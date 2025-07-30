@@ -23,28 +23,25 @@ export default function AIAnalysis() {
 
   const fetchAIAnalysis = async () => {
     try {
-      // Mock AI analysis data - replace with actual API call
-      const mockAnalysis = {
-        market_sentiment: 'Bullish',
-        sentiment_score: 7.8,
-        key_insights: [
-          'Strong momentum in tech sector detected',
-          'Volume patterns suggest continued upward movement',
-          'Risk-reward ratio favorable for long positions',
-          'Market volatility decreasing steadily'
-        ],
-        recommendations: [
-          'Consider increasing position size in AAPL',
-          'Monitor GOOGL for potential entry point',
-          'Hold current MSFT position',
-          'Set stop-loss at 5% below current levels'
-        ],
-        risk_assessment: 'Moderate',
-        confidence_level: 8.5
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/ai/analysis`)
+      
+      if (!response.ok) {
+        throw new Error(`AI Analysis API returned ${response.status}`)
       }
-      setAnalysis(mockAnalysis)
+      
+      const data = await response.json()
+      setAnalysis(data)
     } catch (error) {
       console.error('Error fetching AI analysis:', error)
+      // Set fallback analysis on error
+      setAnalysis({
+        market_sentiment: 'Unknown',
+        sentiment_score: 0,
+        key_insights: ['AI analysis temporarily unavailable'],
+        recommendations: ['Check connection and try again'],
+        risk_assessment: 'Unknown',
+        confidence_level: 0
+      })
     } finally {
       setLoading(false)
     }

@@ -21,33 +21,46 @@ export default function TradingPerformance() {
 
   const fetchPerformanceData = async () => {
     try {
-      // Get real portfolio data
-      const portfolioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/portfolio`)
+      // Get real performance data from the backend
+      const performanceResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/performance/history`)
       
-      if (!portfolioResponse.ok) {
-        throw new Error(`Portfolio API returned ${portfolioResponse.status}`)
+      if (!performanceResponse.ok) {
+        throw new Error(`Performance API returned ${performanceResponse.status}`)
       }
       
-      const portfolioData = await portfolioResponse.json()
+      const performanceData = await performanceResponse.json()
       
-      // Create time series data with current portfolio value
-      const currentValue = portfolioData.portfolio_value || 100000 // Default to $100k if no data
-      const mockData = Array.from({ length: 24 }, (_, i) => ({
-        timestamp: new Date(Date.now() - (23 - i) * 60 * 60 * 1000).toISOString(),
-        value: currentValue + (Math.random() * 100 - 50), // Small variations around current value
-        pnl: Math.random() * 20 - 10 // Small P&L variations
-      }))
-      
-      setPerformanceData(mockData)
+      if (performanceData.performance_data && Array.isArray(performanceData.performance_data)) {
+        setPerformanceData(performanceData.performance_data)
+      } else {
+        throw new Error('Invalid performance data format')
+      }
     } catch (error) {
       console.error('Error fetching performance data:', error)
-      // Show default data on error - represents starting capital
-      const defaultData = Array.from({ length: 24 }, (_, i) => ({
-        timestamp: new Date(Date.now() - (23 - i) * 60 * 60 * 1000).toISOString(),
-        value: 100000, // Default starting portfolio value
-        pnl: 0 // No P&L yet
-      }))
-      setPerformanceData(defaultData)
+      // Get portfolio data as fallback to at least show current value
+      try {
+        const portfolioResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/portfolio`)
+        const portfolioData = await portfolioResponse.json()
+        const currentValue = portfolioData.portfolio_value || 100000
+        
+        // Create minimal time series with real portfolio value
+        const fallbackData = Array.from({ length: 24 }, (_, i) => ({
+          timestamp: new Date(Date.now() - (23 - i) * 60 * 60 * 1000).toISOString(),
+          value: currentValue,
+          pnl: 0
+        }))
+        
+        setPerformanceData(fallbackData)
+      } catch (fallbackError) {
+        console.error('Error fetching fallback portfolio data:', fallbackError)
+        // Last resort - show basic structure with default values
+        const defaultData = Array.from({ length: 24 }, (_, i) => ({
+          timestamp: new Date(Date.now() - (23 - i) * 60 * 60 * 1000).toISOString(),
+          value: 100000,
+          pnl: 0
+        }))
+        setPerformanceData(defaultData)
+      }
     } finally {
       setLoading(false)
     }

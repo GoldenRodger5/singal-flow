@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python railway_start_with_dashboard.py",
+    "startCommand": "python scripts/production_api.py",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",

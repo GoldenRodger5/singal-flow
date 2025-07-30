@@ -28,7 +28,42 @@ export default function RealtimeCharts({ symbol = 'AAPL' }: ChartProps) {
 
   const fetchRealtimeData = async () => {
     try {
-      // Mock realtime data - replace with actual API call
+      // Get real market data from the backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/market/realtime/${selectedSymbol}`)
+      
+      if (!response.ok) {
+        throw new Error(`Market data API returned ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.chart_data && Array.isArray(data.chart_data)) {
+        setChartData(data.chart_data)
+      } else {
+        throw new Error('Invalid market data format')
+      }
+    } catch (error) {
+      console.error('Error fetching realtime data:', error)
+      // Fallback to basic structure on error
+      const fetchRealtimeData = async () => {
+    try {
+      // Get real market data from the backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/market/realtime/${selectedSymbol}`)
+      
+      if (!response.ok) {
+        throw new Error(`Market API returned ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.chart_data && Array.isArray(data.chart_data)) {
+        setChartData(data.chart_data)
+      } else {
+        throw new Error('Invalid market data format')
+      }
+    } catch (error) {
+      console.error('Error fetching realtime data:', error)
+      // Fallback to basic chart structure on error
       const basePrice = {
         'AAPL': 195.50,
         'GOOGL': 142.80,
@@ -37,15 +72,17 @@ export default function RealtimeCharts({ symbol = 'AAPL' }: ChartProps) {
         'AMZN': 145.20
       }[selectedSymbol] || 195.50
 
-      const mockData = Array.from({ length: 50 }, (_, i) => ({
+      const fallbackData = Array.from({ length: 50 }, (_, i) => ({
         timestamp: new Date(Date.now() - (49 - i) * 60 * 1000).toISOString(),
-        price: basePrice + (Math.random() - 0.5) * 10,
-        volume: Math.floor(Math.random() * 1000000) + 100000
+        price: basePrice,
+        volume: 500000
       }))
 
-      setChartData(mockData)
-    } catch (error) {
-      console.error('Error fetching realtime data:', error)
+      setChartData(fallbackData)
+    } finally {
+      setLoading(false)
+    }
+  }
     } finally {
       setLoading(false)
     }

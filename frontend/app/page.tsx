@@ -11,12 +11,14 @@ import RealtimeCharts from '../components/RealtimeCharts'
 import ControlPanel from '../components/ControlPanel'
 import EnhancedControlPanel from '../components/EnhancedControlPanel'
 import ClientTime from '../components/ClientTime'
+import { useBackendStatus } from '../hooks/useBackendStatus'
 
 type DashboardView = 'overview' | 'trading' | 'ai' | 'control'
 
 export default function Home() {
   const [activeView, setActiveView] = useState<DashboardView>('overview')
   const [enhancedMode, setEnhancedMode] = useState(false)
+  const { isConnected: backendConnected } = useBackendStatus()
 
   const renderOverviewTab = () => (
     <div className="space-y-6">
@@ -139,7 +141,13 @@ export default function Home() {
               Signal Flow AI Trading System © 2025
             </p>
             <div className="flex items-center space-x-4 text-sm text-gray-400">
-              <span>Backend: Connected</span>
+              <span className="flex items-center">
+                Backend: 
+                <span className={`ml-1 ${backendConnected ? 'text-green-400' : 'text-red-400'}`}>
+                  {backendConnected ? 'Connected' : 'Disconnected'}
+                </span>
+                <div className={`w-2 h-2 rounded-full ml-2 ${backendConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              </span>
               <span>•</span>
               <span>Last Update: <ClientTime /></span>
             </div>
