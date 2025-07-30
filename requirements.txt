@@ -1,4 +1,4 @@
-# Railway Deployment Requirements - Updated for Cloud
+# Railway Deployment Requirements - Complete Backend Dependencies
 streamlit>=1.28.0
 pandas>=1.5.0,<2.1.0
 numpy>=1.24.0,<2.0.0
@@ -55,12 +55,8 @@ flake8>=6.0.0
 psutil>=5.9.0
 websocket-client>=1.6.0
 
-# Streamlit Cloud deployment dependencies
-# (These ensure graceful fallback handling for cloud deployment)
-# Note: streamlit, pandas, numpy, plotly already included above
-
 # Additional devcontainer dependencies
-ipython>=8.0.0                         # Enhanced REPL for development
-jupyter>=1.0.0                         # Notebook support
-matplotlib>=3.5.0                      # Additional plotting capability
-seaborn>=0.11.0                        # Statistical visualizations
+ipython>=8.0.0
+jupyter>=1.0.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
