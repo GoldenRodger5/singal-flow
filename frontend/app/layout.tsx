@@ -6,6 +6,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata = {
   title: 'Signal Flow - AI Trading Dashboard',
   description: 'Real-time AI-powered trading system monitoring',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

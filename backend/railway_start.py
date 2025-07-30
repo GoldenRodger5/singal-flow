@@ -12,6 +12,7 @@ from loguru import logger
 import threading
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -45,6 +46,15 @@ def setup_cloud_logging():
 
 # Health check API for Railway
 app = FastAPI(title="Signal Flow Trading Bot", version="1.0.0")
+
+# Add CORS middleware to allow frontend connections
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def root():

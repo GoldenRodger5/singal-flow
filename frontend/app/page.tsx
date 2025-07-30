@@ -10,6 +10,7 @@ import AILearningDashboard from '../components/AILearningDashboard'
 import RealtimeCharts from '../components/RealtimeCharts'
 import ControlPanel from '../components/ControlPanel'
 import EnhancedControlPanel from '../components/EnhancedControlPanel'
+import ClientTime from '../components/ClientTime'
 
 type DashboardView = 'overview' | 'trading' | 'ai' | 'control'
 
@@ -140,7 +141,7 @@ export default function Home() {
             <div className="flex items-center space-x-4 text-sm text-gray-400">
               <span>Backend: Connected</span>
               <span>•</span>
-              <span>Last Update: {new Date().toLocaleTimeString()}</span>
+              <span>Last Update: <ClientTime /></span>
             </div>
           </div>
         </div>
