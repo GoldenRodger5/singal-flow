@@ -1,0 +1,12 @@
+{
+  "build": {
+    "commands": [
+      "pip install -r requirements.txt"
+    ]
+  },
+  "deploy": {
+    "startCommand": "python start.py",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300
+  }
+}
