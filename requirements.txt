@@ -58,3 +58,9 @@ websocket-client>=1.6.0
 # Streamlit Cloud deployment dependencies
 # (These ensure graceful fallback handling for cloud deployment)
 # Note: streamlit, pandas, numpy, plotly already included above
+
+# Additional devcontainer dependencies
+ipython>=8.0.0                         # Enhanced REPL for development
+jupyter>=1.0.0                         # Notebook support
+matplotlib>=3.5.0                      # Additional plotting capability
+seaborn>=0.11.0                        # Statistical visualizations
