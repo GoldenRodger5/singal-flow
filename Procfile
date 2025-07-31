@@ -1,1 +1,1 @@
-web: cd backend && python scripts/production_api.py
+web: cd backend && uvicorn scripts.production_api:app --host 0.0.0.0 --port $PORT
