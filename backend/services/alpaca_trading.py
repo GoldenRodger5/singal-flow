@@ -158,8 +158,8 @@ class AlpacaTradingService:
             logger.error(f"Error getting open orders: {e}")
             return []
     
-    def cancel_order(self, order_id: str) -> bool:
-        """Cancel an open order."""
+    def cancel_order_sync(self, order_id: str) -> bool:
+        """Cancel an open order (synchronous version)."""
         try:
             self.api.cancel_order(order_id)
             logger.info(f"Order {order_id} cancelled")
@@ -182,3 +182,35 @@ class AlpacaTradingService:
         except Exception as e:
             logger.error(f"Error getting account info: {e}")
             return {}
+
+    async def get_account(self):
+        """Get raw account object for production API compatibility."""
+        try:
+            return self.api.get_account()
+        except Exception as e:
+            logger.error(f"Error getting account: {e}")
+            return None
+
+    async def get_positions(self):
+        """Get current positions for production API compatibility."""
+        try:
+            return self.api.list_positions()
+        except Exception as e:
+            logger.error(f"Error getting positions: {e}")
+            return []
+
+    async def get_orders(self):
+        """Get orders for production API compatibility."""
+        try:
+            return self.api.list_orders()
+        except Exception as e:
+            logger.error(f"Error getting orders: {e}")
+            return []
+
+    async def cancel_order(self, order_id: str):
+        """Cancel an order for production API compatibility."""
+        try:
+            return self.api.cancel_order(order_id)
+        except Exception as e:
+            logger.error(f"Error canceling order {order_id}: {e}")
+            return None
