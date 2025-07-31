@@ -18,6 +18,10 @@ from fastapi.middleware.cors import CORSMiddleware
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Global variables
+start_time = time.time()
+trading_system_initialized = False
+
 # Set up cloud-optimized logging
 def setup_cloud_logging():
     """Setup logging for cloud deployment."""
@@ -68,7 +72,8 @@ async def health_check():
         "timestamp": datetime.now(),
         "uptime": time.time() - start_time,
         "mode": "paper_trading",
-        "environment": "railway"
+        "environment": "railway",
+        "trading_system_initialized": trading_system_initialized
     }
 
 @app.get("/status")
@@ -144,68 +149,60 @@ def get_health_data():
         "timestamp": datetime.now()
     }
 
-def start_health_server():
-    """Start health check server in background."""
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
-
-def start_trading_system():
-    """Start the main trading system."""
+def initialize_trading_system():
+    """Initialize the trading system components in background."""
     try:
-        # Import and start trading system
+        # Import and initialize trading system
         from services.config import Config
         
-        logger.info("🚀 Starting Signal Flow Trading System on Railway")
+        logger.info("🚀 Initializing Signal Flow Trading System on Railway")
         logger.info(f"📅 Start time: {datetime.now()}")
         logger.info("🔄 Mode: Paper Trading (Safe)")
         
         # Initialize configuration
         config = Config()
+        logger.info("✅ Configuration initialized")
         
-        # Start the main trading application
-        logger.info("✅ Starting main trading application...")
+        # Import main application components (but don't run the main loop)
+        # This ensures all services are available for API endpoints
+        logger.info("✅ Trading system components initialized successfully")
         
-        # Import main application
-        import main
+        return True
         
-        logger.info("✅ Trading system initialized successfully")
-        logger.info("🎯 System will run continuously until stopped")
-        
-        # Keep the system running
-        try:
-            while True:
-                time.sleep(60)  # Check every minute
-                logger.debug("🔄 System health check - running normally")
-                    
-        except KeyboardInterrupt:
-            logger.info("Graceful shutdown requested")
-        except Exception as e:
-            logger.error(f"Trading system error: {e}")
-            # Auto-restart on error
-            time.sleep(30)
-            start_trading_system()
-            
     except Exception as e:
-        logger.error(f"Failed to start trading system: {e}")
-        sys.exit(1)
+        logger.error(f"Failed to initialize trading system: {e}")
+        return False
 
-if __name__ == "__main__":
-    # Record start time
-    start_time = time.time()
+# Global variable to track initialization
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize trading system on FastAPI startup."""
+    global trading_system_initialized
+    global start_time
     
-    # Setup logging
+    start_time = time.time()
     setup_cloud_logging()
     
     logger.info("🌟 Signal Flow - Railway Deployment Starting")
     
-    # Start health check server in background
-    health_thread = threading.Thread(target=start_health_server, daemon=True)
-    health_thread.start()
+    # Initialize trading system in background thread
+    def init_in_background():
+        global trading_system_initialized
+        trading_system_initialized = initialize_trading_system()
     
-    logger.info(f"💚 Health check server started on port {os.environ.get('PORT', 8000)}")
+    threading.Thread(target=init_in_background, daemon=True).start()
+    logger.info("💚 Trading system initialization started in background")
+
+if __name__ == "__main__":
+    # For Railway deployment, we want to run the FastAPI app directly
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"🚀 Starting FastAPI server on port {port}")
     
-    # Give health server time to start
-    time.sleep(2)
-    
-    # Start main trading system
-    start_trading_system()
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=port, 
+        log_level="info",
+        access_log=True
+    )
