@@ -11,7 +11,7 @@ from loguru import logger
 
 from services.config import Config
 from services.alpaca_trading import AlpacaTradingService
-from services.interactive_trading import InteractiveTradingService
+
 
 
 class TelegramTradingService:
@@ -21,7 +21,8 @@ class TelegramTradingService:
         """Initialize the service."""
         self.config = Config()
         self.alpaca = AlpacaTradingService()
-        self.interactive_trading = InteractiveTradingService()
+        # Note: Interactive trading removed to avoid circular imports
+        self.interactive_trading = None
         
         # Store pending trade recommendations for execution
         self.pending_trades: Dict[str, Dict[str, Any]] = {}

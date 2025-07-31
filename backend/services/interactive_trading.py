@@ -10,17 +10,17 @@ import json
 from datetime import datetime, timedelta
 
 from services.config import Config
-from services.twilio_whatsapp import WhatsAppNotifier
 from services.alpaca_trading import AlpacaTradingService
 
 
 class InteractiveTradingService:
-    """Service for interactive trading with WhatsApp confirmations."""
+    """Service for interactive trading with Telegram confirmations."""
     
     def __init__(self):
         """Initialize interactive trading service."""
         self.config = Config()
-        self.whatsapp = WhatsAppNotifier()
+        # Note: Telegram service imported when needed to avoid circular imports
+        self.telegram = None
         self.alpaca = AlpacaTradingService()
         self.pending_confirmations: Dict[str, Dict[str, Any]] = {}
         self.confirmation_responses: Dict[str, str] = {}

@@ -257,10 +257,9 @@ class ExecutionMonitorAgent:
                 
                 if order_result:
                     # Send notification about executed exit
-                    from services.twilio_whatsapp import WhatsAppNotifier
-                    notifier = WhatsAppNotifier()
+                    from services.telegram_trading import telegram_trading
                     
-                    await notifier.send_message(
+                    await telegram_trading.send_message(
                         f"🤖 AUTO-EXIT EXECUTED\n"
                         f"📊 {ticker}: {shares} shares SOLD\n"
                         f"💰 Exit: ${exit_price:.2f}\n"

@@ -52,7 +52,7 @@ class SignalFlowOrchestrator:
             from services.telegram_bot import TelegramNotifier
             from services.production_telegram import production_telegram  # NEW: Production integration
             
-            # Initialize services (Telegram only - no WhatsApp/Twilio)
+            # Initialize services (Telegram only)
             market_watcher = MarketWatcherAgent()
             sentiment_agent = SentimentAgent()
             trade_recommender = TradeRecommenderAgent()
@@ -166,13 +166,12 @@ class SignalFlowOrchestrator:
             logger.info("Generating daily summary...")
             
             from agents.summary_agent import SummaryAgent
-            from services.twilio_whatsapp import WhatsAppNotifier
+            from services.telegram_trading import telegram_trading
             
             summary_agent = SummaryAgent()
-            notifier = WhatsAppNotifier()
             
             summary = await summary_agent.generate_daily_summary()
-            await notifier.send_daily_summary(summary)
+            await telegram_trading.send_daily_summary(summary)
             
             logger.info("Daily summary sent")
             
@@ -202,12 +201,11 @@ class SignalFlowOrchestrator:
             # Generate insights
             insights = await self.learning_manager.generate_daily_insights()
             
-            # Send learning summary via WhatsApp
-            from services.twilio_whatsapp import WhatsAppNotifier
-            notifier = WhatsAppNotifier()
+            # Send learning summary via Telegram
+            from services.telegram_trading import telegram_trading
             
             learning_summary = self._format_learning_summary(results, insights)
-            await notifier.send_message(f"🧠 AI Learning Update:\n{learning_summary}")
+            await telegram_trading.send_message(f"🧠 AI Learning Update:\n{learning_summary}")
             
             logger.info("AI learning cycle completed")
             
@@ -221,11 +219,10 @@ class SignalFlowOrchestrator:
             results = await self.learning_manager.run_strategy_validation()
             
             # Send validation summary
-            from services.twilio_whatsapp import WhatsAppNotifier
-            notifier = WhatsAppNotifier()
+            from services.telegram_trading import telegram_trading
             
             validation_summary = self._format_validation_summary(results)
-            await notifier.send_message(f"📊 Strategy Validation:\n{validation_summary}")
+            await telegram_trading.send_message(f"📊 Strategy Validation:\n{validation_summary}")
             
             logger.info("Strategy validation completed")
             
@@ -233,7 +230,7 @@ class SignalFlowOrchestrator:
             logger.error(f"Error in strategy validation: {e}")
     
     def _format_learning_summary(self, results: dict, insights: dict) -> str:
-        """Format learning results for WhatsApp notification."""
+        """Format learning results for Telegram notification."""
         summary = []
         
         # Learning metrics

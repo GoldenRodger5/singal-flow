@@ -625,5 +625,44 @@ class DatabaseManager:
             return {}
 
 
-# Global database instance
-db_manager = DatabaseManager()
+# Global database instance - lazy initialization
+_db_manager = None
+
+def get_db_manager():
+    """Get database manager instance with lazy initialization."""
+    global _db_manager
+    if _db_manager is None:
+        try:
+            _db_manager = DatabaseManager()
+        except Exception as e:
+            logger.warning(f"Database connection failed: {e}")
+            # Return a mock database manager for development/testing
+            _db_manager = MockDatabaseManager()
+    return _db_manager
+
+class MockDatabaseManager:
+    """Mock database manager for when MongoDB is unavailable."""
+    
+    def log_trade(self, *args, **kwargs):
+        logger.info("Mock DB: Trade logged")
+        return {"status": "mock"}
+    
+    def get_trades(self, *args, **kwargs):
+        return []
+    
+    def log_ai_decision(self, *args, **kwargs):
+        logger.info("Mock DB: AI decision logged")
+        return {"status": "mock"}
+    
+    def get_recent_decisions(self, *args, **kwargs):
+        return []
+    
+    def __getattr__(self, name):
+        """Handle any other method calls."""
+        def mock_method(*args, **kwargs):
+            logger.info(f"Mock DB: {name} called")
+            return {"status": "mock"}
+        return mock_method
+
+# Backward compatibility
+db_manager = get_db_manager()
