@@ -125,3 +125,4 @@ model_cache/
 positions.json
 trades.json
 account_info.json
+.vercel
