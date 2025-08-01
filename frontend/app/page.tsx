@@ -10,10 +10,11 @@ import AILearningDashboard from '../components/AILearningDashboard'
 import RealtimeCharts from '../components/RealtimeCharts'
 import ControlPanel from '../components/ControlPanel'
 import EnhancedControlPanel from '../components/EnhancedControlPanel'
+import EnhancedDashboardV2 from '../components/EnhancedDashboardV2'
 import ClientTime from '../components/ClientTime'
 import { useBackendStatus } from '../hooks/useBackendStatus'
 
-type DashboardView = 'overview' | 'trading' | 'ai' | 'control'
+type DashboardView = 'overview' | 'trading' | 'ai' | 'control' | 'enhanced'
 
 export default function Home() {
   const [activeView, setActiveView] = useState<DashboardView>('overview')
@@ -52,6 +53,12 @@ export default function Home() {
     </div>
   )
 
+  const renderEnhancedTab = () => (
+    <div className="space-y-6">
+      <EnhancedDashboardV2 />
+    </div>
+  )
+
   const renderContent = () => {
     switch (activeView) {
       case 'overview':
@@ -62,6 +69,8 @@ export default function Home() {
         return renderAITab()
       case 'control':
         return renderControlTab()
+      case 'enhanced':
+        return renderEnhancedTab()
       default:
         return renderOverviewTab()
     }
@@ -110,7 +119,8 @@ export default function Home() {
               { key: 'overview', label: 'Overview' },
               { key: 'trading', label: 'Trading' },
               { key: 'ai', label: 'AI Analysis' },
-              { key: 'control', label: 'Control Panel' }
+              { key: 'control', label: 'Control Panel' },
+              { key: 'enhanced', label: 'Enhanced Dashboard' }
             ].map((tab) => (
               <button
                 key={tab.key}
