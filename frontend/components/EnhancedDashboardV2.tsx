@@ -241,7 +241,8 @@ export default function EnhancedDashboard() {
             { id: 'holdings', label: 'Advanced Holdings' },
             { id: 'analytics', label: 'Performance Analytics' },
             { id: 'market', label: 'Market Pulse' },
-            { id: 'watchlist', label: 'AI Watchlist' }
+            { id: 'watchlist', label: 'AI Watchlist' },
+            { id: 'config', label: 'Configuration' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -516,6 +517,98 @@ export default function EnhancedDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Configuration Tab */}
+      {activeTab === 'config' && (
+        <div className="space-y-6">
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4">System Configuration</h3>
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Trading Settings */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-blue-400">Trading Settings</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Risk Level</label>
+                  <select className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                    <option value="conservative">Conservative</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="aggressive">Aggressive</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Max Position Size (%)</label>
+                  <input type="number" min="1" max="100" defaultValue="5" 
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Stop Loss (%)</label>
+                  <input type="number" min="1" max="20" defaultValue="3" 
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" />
+                </div>
+              </div>
+              
+              {/* AI Settings */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-blue-400">AI Settings</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Min Signal Confidence</label>
+                  <input type="number" min="0.1" max="1.0" step="0.1" defaultValue="0.7" 
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Analysis Frequency</label>
+                  <select className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                    <option value="1">Every 1 minute</option>
+                    <option value="5">Every 5 minutes</option>
+                    <option value="15">Every 15 minutes</option>
+                    <option value="60">Every hour</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="autoExecute" className="rounded" />
+                  <label htmlFor="autoExecute" className="text-sm text-gray-300">Enable Auto Execution</label>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex space-x-4">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                Save Configuration
+              </button>
+              <button className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors">
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
+          
+          {/* System Status */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
+            
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="text-center p-4 bg-gray-700 rounded">
+                <div className="text-green-400 font-semibold">Trading System</div>
+                <div className="text-sm text-gray-300">Active</div>
+              </div>
+              <div className="text-center p-4 bg-gray-700 rounded">
+                <div className="text-yellow-400 font-semibold">AI Analysis</div>
+                <div className="text-sm text-gray-300">Limited</div>
+              </div>
+              <div className="text-center p-4 bg-gray-700 rounded">
+                <div className="text-red-400 font-semibold">Market Data</div>
+                <div className="text-sm text-gray-300">Not Connected</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

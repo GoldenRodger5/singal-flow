@@ -22,18 +22,25 @@ export default function SystemOverview() {
 
   const fetchSystemStatus = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/health`)
-      const data = await response.json()
+      const [healthRes, controlRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/health/detailed`),
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'}/api/control/status`).catch(() => null)
+      ])
+      
+      const healthData = await healthRes.json()
+      const controlData = controlRes ? await controlRes.json() : null
+      
+      // Map the health data to our interface
       setSystemStatus({
-        railway_status: 'Running',
-        database_status: 'Connected',
-        automation_status: 'Active',
+        railway_status: healthData.status === 'healthy' ? 'Running' : 'Issues Detected',
+        database_status: healthData.components?.database?.status === 'healthy' ? 'Connected' : 'Issues',
+        automation_status: controlData?.control_state?.auto_trading ? 'Active' : 'Paused',
         last_updated: new Date().toLocaleTimeString()
       })
     } catch (error) {
       console.error('Error fetching system status:', error)
       setSystemStatus({
-        railway_status: 'Unknown',
+        railway_status: 'Connection Error',
         database_status: 'Unknown',
         automation_status: 'Unknown',
         last_updated: new Date().toLocaleTimeString()

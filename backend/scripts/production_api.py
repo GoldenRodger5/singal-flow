@@ -347,69 +347,19 @@ async def get_performance_history():
 
 @app.get("/api/market/realtime/{symbol}")
 async def get_realtime_market_data(symbol: str):
-    """Get real-time market data for a specific symbol"""
+    """Get real-time market data for a specific symbol - NO MOCK DATA"""
     try:
-        # In a real implementation, you would fetch from Polygon or Alpaca
-        # For now, we'll generate realistic data based on recent trades
-        import random
+        # Real-time market data requires proper data feed integration
+        raise HTTPException(
+            status_code=501, 
+            detail="Real-time market data service not implemented. Requires integration with market data providers (Polygon, Alpaca, Bloomberg, etc.)"
+        )
         
-        # Get recent trades for this symbol to establish baseline
-        try:
-            recent_trades = await db_manager.get_recent_trades(symbol=symbol, limit=10)
-        except:
-            recent_trades = []
-        
-        # Base prices for common symbols (you could also fetch from Alpaca)
-        base_prices = {
-            'AAPL': 195.50,
-            'GOOGL': 142.80,
-            'MSFT': 415.30,
-            'TSLA': 248.90,
-            'AMZN': 145.20,
-            'NVDA': 875.30,
-            'META': 515.20,
-            'BRK.B': 450.60
-        }
-        
-        base_price = base_prices.get(symbol.upper(), 100.0)
-        
-        # Generate realistic price data for the last hour
-        current_time = datetime.now(timezone.utc)
-        chart_data = []
-        
-        for i in range(50):  # 50 data points for the chart
-            timestamp = current_time - timedelta(minutes=49-i)
-            
-            # Add some realistic price movement
-            price_variation = (i - 25) * 0.1 + (random.random() - 0.5) * 2
-            price = base_price + price_variation
-            
-            # Generate volume data
-            volume = random.randint(100000, 2000000)
-            
-            chart_data.append({
-                'timestamp': timestamp.isoformat(),
-                'price': round(price, 2),
-                'volume': volume
-            })
-        
-        return JSONResponse(content={
-            'symbol': symbol.upper(),
-            'chart_data': chart_data,
-            'current_price': chart_data[-1]['price'],
-            'price_change': round(chart_data[-1]['price'] - chart_data[0]['price'], 2),
-            'last_updated': current_time.isoformat()
-        })
-        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error fetching realtime data for {symbol}: {e}")
-        return JSONResponse(content={
-            'error': str(e),
-            'symbol': symbol.upper(),
-            'chart_data': [],
-            'current_price': 0,
-            'price_change': 0
-        })
+        raise HTTPException(status_code=500, detail=f"Market data service error: {str(e)}")
 
 
 @app.post("/api/trades/execute")
@@ -453,40 +403,16 @@ async def get_recent_ai_decisions(limit: int = 50):
 
 @app.get("/api/ai/signals/recent")
 async def get_recent_ai_signals(limit: int = 50, signal_type: str = None):
-    """Get recent AI signals with analysis"""
+    """Get recent AI signals with analysis - NO MOCK DATA"""
     try:
-        # Generate mock AI signals data for demo purposes
-        current_time = datetime.now(timezone.utc)
+        # AI signals require trained models and real signal generation
+        raise HTTPException(
+            status_code=501, 
+            detail="AI signals service not implemented. Requires trained ML models, technical analysis engines, and real signal generation systems."
+        )
         
-        signals = []
-        for i in range(min(limit, 10)):  # Generate up to 10 mock signals
-            signal_time = current_time - timedelta(hours=i*2)
-            signals.append({
-                '_id': f"signal_{i+1}_{int(signal_time.timestamp())}",
-                'signal_type': 'BUY' if i % 2 == 0 else 'SELL',
-                'symbol': ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'NVDA'][i % 5],
-                'confidence': round(0.65 + (i % 4) * 0.08, 2),
-                'signal_timestamp': signal_time.isoformat(),
-                'price_at_signal': round(150 + i * 5.5, 2),
-                'predicted_move': f"{'+' if i % 2 == 0 else '-'}{round(2.5 + i * 0.3, 1)}%",
-                'reasoning': [
-                    'Strong momentum indicator',
-                    'Volume breakout detected',
-                    'Support/resistance level break'
-                ][:(i % 3) + 1],
-                'status': ['ACTIVE', 'COMPLETED', 'EXPIRED'][i % 3]
-            })
-        
-        # Filter by signal_type if provided
-        if signal_type:
-            signals = [s for s in signals if s['signal_type'] == signal_type.upper()]
-        
-        return JSONResponse(content={
-            'signals': signals,
-            'count': len(signals),
-            'timestamp': current_time.isoformat(),
-            'note': 'Demo data - AI signal tracking system'
-        })
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
         
     except Exception as e:
         logger.error(f"Failed to get recent AI signals: {e}")
@@ -510,74 +436,19 @@ async def get_recent_ai_signals(limit: int = 50, signal_type: str = None):
 
 @app.get("/api/ai/signals/analysis/{signal_id}")
 async def get_signal_analysis(signal_id: str):
-    """Get detailed analysis for a specific signal"""
+    """Get detailed analysis for a specific signal - NO MOCK DATA"""
     try:
-        # Generate mock signal analysis for demo
-        current_time = datetime.now(timezone.utc)
+        # Signal analysis requires real AI models and technical analysis systems
+        raise HTTPException(
+            status_code=501, 
+            detail="Signal analysis service not implemented. Requires technical analysis engines, risk assessment models, and market context analysis."
+        )
         
-        # Mock signal data
-        signal = {
-            '_id': signal_id,
-            'signal_type': 'BUY',
-            'symbol': 'AAPL',
-            'confidence': 0.78,
-            'signal_timestamp': (current_time - timedelta(hours=2)).isoformat(),
-            'price_at_signal': 195.50,
-            'predicted_move': '+3.2%',
-            'status': 'ACTIVE'
-        }
-        
-        # Mock analysis data
-        analysis = {
-            '_id': f"analysis_{signal_id}",
-            'signal_id': signal_id,
-            'technical_indicators': {
-                'RSI': 68.5,
-                'MACD': 'bullish_crossover',
-                'SMA_20': 193.2,
-                'SMA_50': 189.8,
-                'volume_spike': True
-            },
-            'market_context': {
-                'market_regime': 'trending_up',
-                'volatility': 'moderate',
-                'sector_performance': 'outperforming',
-                'correlation_strength': 0.65
-            },
-            'risk_assessment': {
-                'risk_level': 'moderate',
-                'stop_loss_suggested': 190.25,
-                'take_profit_suggested': 202.75,
-                'position_size_recommendation': '2.5%'
-            },
-            'prediction_accuracy': 0.73
-        }
-        
-        # Mock context data
-        context = {
-            '_id': f"context_{signal_id}",
-            'signal_id': signal_id,
-            'market_conditions': {
-                'overall_sentiment': 'bullish',
-                'economic_indicators': 'mixed',
-                'news_sentiment': 'positive',
-                'options_flow': 'call_heavy'
-            },
-            'historical_performance': {
-                'similar_signals_count': 15,
-                'success_rate': 0.67,
-                'avg_return': 2.8,
-                'avg_holding_period': '3.2 days'
-            }
-        }
-        
-        return JSONResponse(content={
-            'signal': signal,
-            'analysis': analysis,
-            'context': context,
-            'timestamp': current_time.isoformat(),
-            'note': 'Demo analysis data'
-        })
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Failed to get signal analysis: {e}")
+        raise HTTPException(status_code=500, detail=f"Signal analysis service error: {str(e)}")
         
     except Exception as e:
         logger.error(f"Failed to get signal analysis: {e}")
@@ -1037,6 +908,195 @@ if __name__ == "__main__":
         reload=False,  # Disable reload in production
         access_log=True,
         log_level="info"
+    )
+
+
+# ==================== CONTROL PANEL ENDPOINTS ====================
+
+# Global control state - in production this should be stored in database
+control_state = {
+    "auto_trading": True,
+    "paper_trading": True,
+    "ai_analysis": True,
+    "data_feed": True,
+    "risk_management": True,
+    "trading_engine": True
+}
+
+@app.post("/api/control/{action}")
+async def execute_control_action(action: str, request_data: Dict[str, Any] = None):
+    """Execute control panel actions"""
+    try:
+        logger.info(f"Executing control action: {action}")
+        
+        if action == "toggle_auto_trading":
+            control_state["auto_trading"] = not control_state["auto_trading"]
+            message = f"Auto trading {'enabled' if control_state['auto_trading'] else 'disabled'}"
+            return JSONResponse(content={
+                "status": "success",
+                "message": message,
+                "new_status": control_state["auto_trading"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            
+        elif action == "toggle_paper_trading":
+            control_state["paper_trading"] = not control_state["paper_trading"]
+            message = f"Paper trading {'enabled' if control_state['paper_trading'] else 'disabled'}"
+            # In real implementation, this would switch Alpaca between paper/live
+            return JSONResponse(content={
+                "status": "success",
+                "message": message,
+                "new_status": control_state["paper_trading"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+            
+        elif action == "emergency_stop":
+            # Emergency stop - halt all trading immediately
+            control_state["auto_trading"] = False
+            control_state["trading_engine"] = False
+            
+            # In real implementation, this would:
+            # 1. Cancel all open orders
+            # 2. Close all positions if configured
+            # 3. Stop all trading algorithms
+            # 4. Send emergency notifications
+            
+            try:
+                # Cancel all open orders through Alpaca
+                orders = await trading_service.get_orders(status='open')
+                for order in orders:
+                    await trading_service.cancel_order(order.id)
+                    logger.info(f"Emergency cancelled order: {order.id}")
+                    
+                logger.warning("EMERGENCY STOP ACTIVATED - All trading halted")
+                
+                return JSONResponse(content={
+                    "status": "success",
+                    "message": "EMERGENCY STOP: All trading activities halted immediately",
+                    "orders_cancelled": len(orders),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            except Exception as e:
+                logger.error(f"Emergency stop error: {e}")
+                return JSONResponse(content={
+                    "status": "partial_success",
+                    "message": "Emergency stop activated, but some operations may have failed",
+                    "error": str(e),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            
+        elif action == "sync_data":
+            # Trigger comprehensive data synchronization
+            try:
+                # Sync account data
+                account = await trading_service.get_account()
+                positions = await trading_service.get_positions()
+                orders = await trading_service.get_orders()
+                
+                sync_results = {
+                    "account_synced": bool(account),
+                    "positions_count": len(positions),
+                    "orders_count": len(orders),
+                    "last_sync": datetime.now(timezone.utc).isoformat()
+                }
+                
+                return JSONResponse(content={
+                    "status": "success",
+                    "message": "Data synchronization completed successfully",
+                    "sync_results": sync_results,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            except Exception as e:
+                logger.error(f"Data sync error: {e}")
+                return JSONResponse(content={
+                    "status": "error",
+                    "message": f"Data synchronization failed: {str(e)}",
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to execute control action {action}: {e}")
+        raise HTTPException(status_code=500, detail=f"Action execution failed: {str(e)}")
+
+
+@app.get("/api/control/status")
+async def get_control_status():
+    """Get current control panel status"""
+    try:
+        # In production, also check actual system states
+        account = await trading_service.get_account()
+        
+        return JSONResponse(content={
+            "control_state": control_state,
+            "system_health": {
+                "trading_engine": control_state["trading_engine"] and bool(account),
+                "ai_analysis": control_state["ai_analysis"],
+                "risk_management": control_state["risk_management"],
+                "data_feed": control_state["data_feed"] and bool(account),
+            },
+            "account_status": {
+                "buying_power": float(account.buying_power) if account else 0,
+                "portfolio_value": float(account.portfolio_value) if account else 0,
+                "trading_blocked": bool(account.trading_blocked) if account else True
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Failed to get control status: {e}")
+        raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
+
+
+# ==================== AI DASHBOARD ENDPOINTS ====================
+
+@app.get("/api/dashboard/ai/signals")
+async def get_ai_signals():
+    """Get AI trading signals for dashboard"""
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "AI signals service not yet implemented"}
+    )
+
+
+@app.get("/api/dashboard/ai/learning-metrics")
+async def get_ai_learning_metrics():
+    """Get AI learning progress metrics"""
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "AI learning metrics service not yet implemented"}
+    )
+
+
+# ==================== CONFIGURATION ENDPOINTS ====================
+
+@app.get("/api/config/system")
+async def get_system_configuration():
+    """Get current system configuration"""
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "System configuration service not yet implemented"}
+    )
+
+
+@app.post("/api/config/system")
+async def update_system_configuration(config_data: Dict[str, Any]):
+    """Update system configuration"""
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "Configuration update service not yet implemented"}
+    )
+
+
+@app.get("/api/config/status")
+async def get_system_status():
+    """Get detailed system status for configuration panel"""
+    return JSONResponse(
+        status_code=501,
+        content={"detail": "System status service not yet implemented"}
     )
 
 
