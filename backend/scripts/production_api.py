@@ -872,190 +872,113 @@ async def get_system_status():
 
 @app.get("/api/dashboard/holdings/detailed")
 async def get_detailed_holdings():
-    """Get detailed holdings with enhanced metrics"""
+    """Get detailed holdings with enhanced metrics - NO MOCK DATA"""
     try:
-        # Get basic positions
+        # Get real positions from Alpaca
         positions = await trading_service.get_positions()
+        
+        if not positions:
+            raise HTTPException(status_code=404, detail="No positions found in account")
+        
+        # Get account info for portfolio calculations
+        account = await trading_service.get_account()
+        total_equity = float(account.equity)
         
         detailed_holdings = []
         for position in positions:
-            # Add enhanced metrics for each position
+            symbol = position.get('symbol')
+            if not symbol:
+                continue
+            
+            qty = float(position.get('qty', 0))
+            market_value = float(position.get('market_value', 0))
+            cost_basis = float(position.get('cost_basis', 0))
+            unrealized_pl = float(position.get('unrealized_pl', 0))
+            avg_entry_price = float(position.get('avg_entry_price', 0))
+            
+            if qty == 0 or cost_basis == 0:
+                continue  # Skip invalid positions
+            
+            current_price = market_value / qty if qty != 0 else 0
+            unrealized_pnl_percent = (unrealized_pl / cost_basis) * 100 if cost_basis != 0 else 0
+            position_size_percent = (market_value / total_equity) * 100 if total_equity != 0 else 0
+            
+            # REAL DATA ONLY - no risk metrics without proper calculation
             enhanced_position = {
-                **position,
-                'entry_price': float(position.get('avg_entry_price', 0)),
-                'current_price': float(position.get('market_value', 0)) / float(position.get('qty', 1)) if float(position.get('qty', 1)) != 0 else 0,
-                'unrealized_pnl_percent': round((float(position.get('unrealized_pl', 0)) / float(position.get('cost_basis', 1))) * 100, 2) if float(position.get('cost_basis', 1)) != 0 else 0,
-                'position_size_percent': 2.5,  # Mock percentage of portfolio
+                'symbol': symbol,
+                'qty': qty,
+                'market_value': market_value,
+                'entry_price': avg_entry_price,
+                'current_price': current_price,
+                'unrealized_pl': unrealized_pl,
+                'unrealized_pnl_percent': round(unrealized_pnl_percent, 2),
+                'position_size_percent': round(position_size_percent, 2),
                 'risk_metrics': {
-                    'beta': round(0.8 + hash(position.get('symbol', '')) % 100 / 250, 2),
-                    'volatility': round(15 + hash(position.get('symbol', '')) % 20, 1),
-                    'sharpe_ratio': round(0.5 + hash(position.get('symbol', '')) % 100 / 200, 2)
+                    'beta': None,  # Requires external data service
+                    'volatility': None,  # Requires historical data
+                    'sharpe_ratio': None  # Requires historical performance data
                 },
                 'ai_signals': {
-                    'current_signal': ['HOLD', 'BUY', 'SELL'][hash(position.get('symbol', '')) % 3],
-                    'confidence': round(0.6 + hash(position.get('symbol', '')) % 40 / 100, 2),
-                    'next_review': (datetime.now(timezone.utc) + timedelta(hours=hash(position.get('symbol', '')) % 24)).isoformat()
+                    'current_signal': 'UNAVAILABLE',  # Requires AI service implementation
+                    'confidence': 0.0,
+                    'next_review': None
                 }
             }
             detailed_holdings.append(enhanced_position)
         
-        # Add mock positions if empty for demo
         if not detailed_holdings:
-            mock_symbols = ['AAPL', 'TSLA', 'MSFT']
-            for i, symbol in enumerate(mock_symbols):
-                detailed_holdings.append({
-                    'symbol': symbol,
-                    'qty': (i + 1) * 10,
-                    'market_value': (150 + i * 50) * (i + 1) * 10,
-                    'entry_price': 145 + i * 48,
-                    'current_price': 150 + i * 50,
-                    'unrealized_pl': (5 + i * 2) * (i + 1) * 10,
-                    'unrealized_pnl_percent': round((5 + i * 2) / (145 + i * 48) * 100, 2),
-                    'position_size_percent': 15 + i * 10,
-                    'risk_metrics': {
-                        'beta': round(0.8 + i * 0.3, 2),
-                        'volatility': 18 + i * 5,
-                        'sharpe_ratio': round(1.2 - i * 0.2, 2)
-                    },
-                    'ai_signals': {
-                        'current_signal': ['BUY', 'HOLD', 'SELL'][i],
-                        'confidence': round(0.75 - i * 0.1, 2),
-                        'next_review': (datetime.now(timezone.utc) + timedelta(hours=6 + i * 12)).isoformat()
-                    }
-                })
+            raise HTTPException(status_code=404, detail="No valid positions after processing")
         
         return JSONResponse(content={
             'holdings': detailed_holdings,
             'summary': {
                 'total_positions': len(detailed_holdings),
-                'total_value': sum(float(h.get('market_value', 0)) for h in detailed_holdings),
-                'total_pnl': sum(float(h.get('unrealized_pl', 0)) for h in detailed_holdings),
-                'avg_performance': round(sum(h.get('unrealized_pnl_percent', 0) for h in detailed_holdings) / max(len(detailed_holdings), 1), 2)
+                'total_value': sum(h['market_value'] for h in detailed_holdings),
+                'total_pnl': sum(h['unrealized_pl'] for h in detailed_holdings),
+                'avg_performance': round(sum(h['unrealized_pnl_percent'] for h in detailed_holdings) / len(detailed_holdings), 2)
             },
             'timestamp': datetime.now(timezone.utc).isoformat()
         })
         
     except Exception as e:
         logger.error(f"Failed to get detailed holdings: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Holdings service unavailable: {str(e)}")
 
 
 @app.get("/api/dashboard/analytics/performance")
 async def get_performance_analytics():
-    """Get detailed performance analytics"""
+    """Get detailed performance analytics - NO MOCK DATA"""
     try:
-        # Generate performance analytics
-        current_time = datetime.now(timezone.utc)
+        # Performance analytics requires historical data and complex calculations
+        # Without proper implementation, we should not provide fake data
+        raise HTTPException(
+            status_code=501, 
+            detail="Performance analytics service not implemented. Requires historical data analysis, risk calculations, and performance attribution models."
+        )
         
-        analytics = {
-            'daily_performance': {
-                'return_pct': 1.2,
-                'alpha': 0.08,
-                'beta': 0.95,
-                'sharpe_ratio': 1.45,
-                'sortino_ratio': 1.78,
-                'max_drawdown': -3.2,
-                'volatility': 12.5
-            },
-            'attribution': {
-                'sector_allocation': {
-                    'Technology': 45.0,
-                    'Healthcare': 25.0,
-                    'Financial': 20.0,
-                    'Energy': 10.0
-                },
-                'factor_exposure': {
-                    'Growth': 0.6,
-                    'Value': 0.2,
-                    'Momentum': 0.8,
-                    'Quality': 0.7,
-                    'Size': -0.1
-                }
-            },
-            'risk_metrics': {
-                'var_95': -2.1,
-                'cvar_95': -3.8,
-                'beta_spy': 0.92,
-                'correlation_spy': 0.85,
-                'tracking_error': 4.2
-            },
-            'trade_analytics': {
-                'win_rate': 0.68,
-                'avg_win': 3.2,
-                'avg_loss': -1.8,
-                'profit_factor': 2.1,
-                'avg_holding_period': 2.3
-            }
-        }
-        
-        return JSONResponse(content={
-            'analytics': analytics,
-            'timestamp': current_time.isoformat(),
-            'period': 'daily'
-        })
-        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Failed to get performance analytics: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Analytics service error: {str(e)}")
 
 
 @app.get("/api/dashboard/market/pulse")
 async def get_market_pulse():
-    """Get real-time market pulse and sentiment"""
+    """Get real-time market pulse and sentiment - NO MOCK DATA"""
     try:
-        current_time = datetime.now(timezone.utc)
+        # Market pulse requires real-time market data integration
+        # Without proper data sources (Bloomberg, Reuters, Polygon, etc.), we should not provide fake data
+        raise HTTPException(
+            status_code=501, 
+            detail="Market pulse service not implemented. Requires real-time market data feeds, sentiment analysis, and market regime detection."
+        )
         
-        pulse_data = {
-            'market_overview': {
-                'spy_change': 0.8,
-                'qqq_change': 1.2,
-                'vix_level': 18.5,
-                'dxy_change': -0.3,
-                'yield_10y': 4.25
-            },
-            'sector_performance': {
-                'XLK': 1.5,  # Technology
-                'XLV': 0.8,  # Healthcare
-                'XLF': 0.3,  # Financial
-                'XLE': -0.5,  # Energy
-                'XLI': 0.6,  # Industrial
-                'XLY': 1.1,  # Consumer Discretionary
-                'XLP': 0.2,  # Consumer Staples
-                'XLU': -0.2,  # Utilities
-                'XLRE': 0.4,  # Real Estate
-                'XLB': 0.1   # Materials
-            },
-            'sentiment_indicators': {
-                'fear_greed_index': 72,
-                'put_call_ratio': 0.85,
-                'vix_term_structure': 'normal',
-                'high_low_ratio': 1.8,
-                'advance_decline': 1.4
-            },
-            'ai_market_assessment': {
-                'regime': 'trending_bullish',
-                'confidence': 0.78,
-                'key_drivers': [
-                    'Strong earnings momentum',
-                    'Fed policy stability',
-                    'Technical breakout confirmed'
-                ],
-                'risks': [
-                    'Elevated valuations',
-                    'Geopolitical tensions'
-                ]
-            }
-        }
-        
-        return JSONResponse(content={
-            'market_pulse': pulse_data,
-            'timestamp': current_time.isoformat(),
-            'next_update': (current_time + timedelta(minutes=5)).isoformat()
-        })
-        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Failed to get market pulse: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Market pulse service error: {str(e)}")
 
 
 @app.post("/api/dashboard/config/update")
@@ -1079,42 +1002,20 @@ async def update_dashboard_config(config_data: Dict[str, Any]):
 
 @app.get("/api/dashboard/watchlist/signals")
 async def get_watchlist_signals():
-    """Get AI signals for watchlist symbols"""
+    """Get AI signals for watchlist symbols - NO MOCK DATA"""
     try:
-        watchlist_symbols = ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'NVDA', 'AMZN', 'META', 'NFLX']
-        current_time = datetime.now(timezone.utc)
+        # AI signals require trained models, technical analysis, and sentiment processing
+        # Without proper AI implementation, we should not provide fake signals
+        raise HTTPException(
+            status_code=501, 
+            detail="AI watchlist signals service not implemented. Requires machine learning models, technical analysis engines, and sentiment analysis."
+        )
         
-        signals = []
-        for i, symbol in enumerate(watchlist_symbols):
-            signal_strength = (hash(symbol) % 100) / 100
-            signals.append({
-                'symbol': symbol,
-                'signal_type': 'BUY' if signal_strength > 0.6 else 'HOLD' if signal_strength > 0.3 else 'SELL',
-                'confidence': round(signal_strength, 2),
-                'current_price': round(150 + i * 25 + (hash(symbol) % 50), 2),
-                'target_price': round(150 + i * 25 + (hash(symbol) % 50) * 1.05, 2),
-                'stop_loss': round(150 + i * 25 + (hash(symbol) % 50) * 0.95, 2),
-                'technical_score': round(0.4 + signal_strength * 0.6, 2),
-                'fundamental_score': round(0.5 + (hash(symbol + 'fund') % 50) / 100, 2),
-                'sentiment_score': round(0.3 + (hash(symbol + 'sent') % 70) / 100, 2),
-                'last_updated': (current_time - timedelta(minutes=hash(symbol) % 30)).isoformat()
-            })
-        
-        return JSONResponse(content={
-            'signals': signals,
-            'summary': {
-                'total_symbols': len(signals),
-                'buy_signals': len([s for s in signals if s['signal_type'] == 'BUY']),
-                'hold_signals': len([s for s in signals if s['signal_type'] == 'HOLD']),
-                'sell_signals': len([s for s in signals if s['signal_type'] == 'SELL']),
-                'avg_confidence': round(sum(s['confidence'] for s in signals) / len(signals), 2)
-            },
-            'timestamp': current_time.isoformat()
-        })
-        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Failed to get watchlist signals: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Watchlist signals service error: {str(e)}")
 
 
 # ==================== MAIN ENTRY POINT ====================

@@ -84,6 +84,7 @@ export default function EnhancedDashboard() {
   const [marketPulse, setMarketPulse] = useState<MarketPulse | null>(null)
   const [watchlistSignals, setWatchlistSignals] = useState<WatchlistSignal[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('holdings')
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'
@@ -91,6 +92,7 @@ export default function EnhancedDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true)
+      setError(null)
       
       const [holdingsRes, analyticsRes, pulseRes, signalsRes] = await Promise.all([
         fetch(`${backendUrl}/api/dashboard/holdings/detailed`),
@@ -99,6 +101,29 @@ export default function EnhancedDashboard() {
         fetch(`${backendUrl}/api/dashboard/watchlist/signals`)
       ])
 
+      // Check for HTTP errors and collect error messages
+      const errors = []
+      if (!holdingsRes.ok) {
+        const holdingsError = await holdingsRes.json().catch(() => ({ detail: 'Holdings service failed' }))
+        errors.push(`Holdings: ${holdingsError.detail}`)
+      }
+      if (!analyticsRes.ok) {
+        const analyticsError = await analyticsRes.json().catch(() => ({ detail: 'Analytics service failed' }))
+        errors.push(`Analytics: ${analyticsError.detail}`)
+      }
+      if (!pulseRes.ok) {
+        const pulseError = await pulseRes.json().catch(() => ({ detail: 'Market pulse service failed' }))
+        errors.push(`Market Pulse: ${pulseError.detail}`)
+      }
+      if (!signalsRes.ok) {
+        const signalsError = await signalsRes.json().catch(() => ({ detail: 'Watchlist signals service failed' }))
+        errors.push(`Watchlist: ${signalsError.detail}`)
+      }
+
+      if (errors.length > 0) {
+        throw new Error(errors.join('; '))
+      }
+
       const [holdingsData, analyticsData, pulseData, signalsData] = await Promise.all([
         holdingsRes.json(),
         analyticsRes.json(),
@@ -106,13 +131,22 @@ export default function EnhancedDashboard() {
         signalsRes.json()
       ])
 
+      // Only set data if we have valid responses - no fallbacks
       setDetailedHoldings(holdingsData.holdings || [])
-      setPerformanceAnalytics(analyticsData.analytics)
-      setMarketPulse(pulseData.market_pulse)
+      setPerformanceAnalytics(analyticsData.analytics || null)
+      setMarketPulse(pulseData.market_pulse || null)
       setWatchlistSignals(signalsData.signals || [])
       
-    } catch (error) {
-      console.error('Failed to fetch enhanced dashboard data:', error)
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to fetch enhanced dashboard data'
+      setError(errorMessage)
+      console.error('Enhanced dashboard error:', error)
+      
+      // Clear all data on error
+      setDetailedHoldings([])
+      setPerformanceAnalytics(null)
+      setMarketPulse(null)
+      setWatchlistSignals([])
     } finally {
       setLoading(false)
     }
@@ -148,6 +182,42 @@ export default function EnhancedDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-400">Loading enhanced dashboard...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">Enhanced Trading Dashboard</h2>
+          <button 
+            onClick={fetchData} 
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+        
+        <div className="bg-red-900 border border-red-700 rounded-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm font-bold">!</span>
+            </div>
+            <h3 className="text-lg font-semibold text-red-100">Enhanced Dashboard Services Unavailable</h3>
+          </div>
+          <p className="text-red-200 mb-4">{error}</p>
+          <div className="text-sm text-red-300">
+            <p>The enhanced dashboard requires implementation of:</p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Real-time market data integration (Polygon, Bloomberg, etc.)</li>
+              <li>AI analysis and signal generation services</li>
+              <li>Historical performance calculation engines</li>
+              <li>Risk management and analytics systems</li>
+            </ul>
+          </div>
+        </div>
       </div>
     )
   }
