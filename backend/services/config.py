@@ -11,12 +11,13 @@ load_dotenv()
 class Config:
     """Central configuration class for the trading system."""
     
-    # API Configuration
+    # API Configuration - Fixed environment variable names
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
     POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
     ALPACA_API_KEY = os.getenv('ALPACA_API_KEY')
-    ALPACA_SECRET = os.getenv('ALPACA_SECRET')
+    ALPACA_SECRET = os.getenv('ALPACA_SECRET_KEY')  # Fixed: was ALPACA_SECRET
+    ALPACA_BASE_URL = os.getenv('ALPACA_BASE_URL', 'https://paper-api.alpaca.markets')
     
     # Telegram Configuration (Primary notification method)
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')

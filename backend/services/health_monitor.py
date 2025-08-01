@@ -22,7 +22,14 @@ class SystemHealthMonitor:
     """Comprehensive system health monitoring"""
     
     def __init__(self):
-        self.trading_service = AlpacaTradingService()
+        # Initialize trading service with error handling
+        try:
+            self.trading_service = AlpacaTradingService()
+            logger.info("✅ Trading service initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Trading service initialization failed: {e}")
+            self.trading_service = None
+            
         self.health_status = {
             'overall': 'healthy',
             'components': {},
@@ -36,6 +43,13 @@ class SystemHealthMonitor:
     async def check_trading_api_health(self) -> Dict:
         """Check Alpaca API connectivity and account status"""
         try:
+            if not self.trading_service:
+                return {
+                    'status': 'unhealthy',
+                    'error': 'Trading service not initialized',
+                    'last_check': datetime.now(timezone.utc).isoformat()
+                }
+                
             account = await self.trading_service.get_account()
             positions = await self.trading_service.get_positions()
             
