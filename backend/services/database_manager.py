@@ -643,26 +643,55 @@ def get_db_manager():
 class MockDatabaseManager:
     """Mock database manager for when MongoDB is unavailable."""
     
-    def log_trade(self, *args, **kwargs):
+    async def log_trade(self, *args, **kwargs):
         logger.info("Mock DB: Trade logged")
         return {"status": "mock"}
     
-    def get_trades(self, *args, **kwargs):
+    async def get_trades(self, *args, **kwargs):
         return []
     
-    def log_ai_decision(self, *args, **kwargs):
+    async def get_active_trades(self, *args, **kwargs):
+        logger.info("Mock DB: get_active_trades called")
+        return []
+    
+    async def log_ai_decision(self, *args, **kwargs):
         logger.info("Mock DB: AI decision logged")
         return {"status": "mock"}
     
-    def get_recent_decisions(self, *args, **kwargs):
+    async def get_recent_decisions(self, *args, **kwargs):
         return []
+    
+    async def get_trade_performance(self, *args, **kwargs):
+        return {}
+    
+    async def log_system_health(self, *args, **kwargs):
+        logger.info("Mock DB: System health logged")
+        return True
+    
+    async def get_recent_trades(self, *args, **kwargs):
+        return []
+    
+    def close(self):
+        logger.info("Mock DB: Connection closed")
     
     def __getattr__(self, name):
         """Handle any other method calls."""
-        def mock_method(*args, **kwargs):
+        async def mock_async_method(*args, **kwargs):
             logger.info(f"Mock DB: {name} called")
             return {"status": "mock"}
-        return mock_method
+        
+        def mock_sync_method(*args, **kwargs):
+            logger.info(f"Mock DB: {name} called")
+            return {"status": "mock"}
+        
+        # Return async method for common async operations
+        if name in ['save_trade', 'update_trade_status', 'save_ai_decision', 
+                   'get_learning_summary', 'get_comprehensive_learning_summary',
+                   'get_training_data', 'get_market_sentiment_history',
+                   'get_pattern_success_rates', 'get_strategy_performance',
+                   'get_market_regime_history']:
+            return mock_async_method
+        return mock_sync_method
 
 # Backward compatibility
 db_manager = get_db_manager()

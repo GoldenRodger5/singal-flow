@@ -99,6 +99,26 @@ async def shutdown_event():
     logger.info("✅ Signal Flow API shutdown complete")
 
 
+# ==================== ROOT & INFO ENDPOINTS ====================
+
+@app.get("/")
+async def root():
+    """Root endpoint with API information"""
+    return {
+        "message": "Signal Flow Trading System API",
+        "version": "2.0.0",
+        "status": "operational",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "endpoints": {
+            "health": "/health",
+            "portfolio": "/api/portfolio",
+            "holdings": "/api/holdings",
+            "trades": "/api/trades/active",
+            "ai_analysis": "/api/ai/analysis"
+        }
+    }
+
+
 # ==================== HEALTH & MONITORING ENDPOINTS ====================
 
 @app.get("/health")
@@ -255,11 +275,7 @@ async def get_holdings():
         
     except Exception as e:
         logger.error(f"Error fetching holdings: {e}")
-        return JSONResponse(content={
-            "holdings": [], 
-            "total_value": 0.0, 
-            "error": str(e)
-        })
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/portfolio")
@@ -280,7 +296,7 @@ async def get_portfolio_summary():
         
     except Exception as e:
         logger.error(f"Error fetching portfolio: {e}")
-        return JSONResponse(content={"error": str(e)})
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/performance/history")
@@ -326,24 +342,7 @@ async def get_performance_history():
         
     except Exception as e:
         logger.error(f"Error fetching performance history: {e}")
-        # Return minimal performance data on error
-        current_time = datetime.now(timezone.utc)
-        default_data = []
-        
-        for i in range(24):
-            timestamp = current_time - timedelta(hours=23-i)
-            default_data.append({
-                'timestamp': timestamp.isoformat(),
-                'value': 100000.0,  # Default starting value
-                'pnl': 0.0
-            })
-        
-        return JSONResponse(content={
-            'performance_data': default_data,
-            'current_value': 100000.0,
-            'total_pnl': 0.0,
-            'error': str(e)
-        })
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/market/realtime/{symbol}")
@@ -456,7 +455,10 @@ async def get_recent_ai_decisions(limit: int = 50):
 async def get_recent_ai_signals(limit: int = 50, signal_type: str = None):
     """Get recent AI signals with analysis"""
     try:
-        from services.ai_decision_tracker import ai_decision_tracker
+        # Disabled: Missing ai_decision_tracker service
+        raise HTTPException(status_code=501, detail="AI signals service not implemented")
+        
+        # from services.ai_decision_tracker import ai_decision_tracker
         
         # Get recent signals
         cutoff_time = datetime.now(timezone.utc) - timedelta(days=7)
@@ -655,25 +657,7 @@ async def get_ai_market_analysis():
         
     except Exception as e:
         logger.error(f"Failed to get AI analysis: {e}")
-        # Return fallback analysis on error
-        return JSONResponse(content={
-            'market_sentiment': 'Neutral',
-            'sentiment_score': 5.0,
-            'key_insights': [
-                'AI analysis temporarily unavailable',
-                'System monitoring continues in background',
-                'Manual review recommended'
-            ],
-            'recommendations': [
-                'Check system logs for details',
-                'Monitor positions manually',
-                'Contact support if issues persist'
-            ],
-            'risk_assessment': 'Unknown',
-            'confidence_level': 0.0,
-            'last_updated': datetime.now(timezone.utc).isoformat(),
-            'error': str(e)
-        })
+        raise HTTPException(status_code=500, detail=str(e))
     try:
         summary = await db_manager.get_comprehensive_learning_summary()
         # Get collection summary (disabled due to yfinance conflict)
