@@ -74,6 +74,20 @@ async def startup_event():
         # Start the trading system in background
         asyncio.create_task(trading_orchestrator.start())
         logger.info("✅ Trading system started successfully")
+        
+        # Send startup notification
+        try:
+            await telegram_trading.send_message(
+                "🚀 *SIGNAL FLOW STARTED*\n\n"
+                f"✅ System: Online\n"
+                f"⏰ Started: {datetime.now().strftime('%H:%M:%S EST')}\n"
+                f"📡 Mode: Paper Trading\n"
+                f"🎯 Market Scanning: Active\n\n"
+                f"Ready to send trading signals!"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send startup notification: {e}")
+            
     except Exception as e:
         logger.error(f"Trading orchestrator initialization failed: {e}")
     
@@ -733,6 +747,33 @@ async def get_system_status():
             "recent_decisions_count": len(recent_decisions),
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
+        
+    except Exception as e:
+        logger.error(f"System status check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/system/trigger_scan")
+async def trigger_manual_scan():
+    """Trigger a manual market scan for testing"""
+    global trading_orchestrator
+    try:
+        if not trading_orchestrator:
+            raise HTTPException(status_code=503, detail="Trading system not initialized")
+        
+        # Trigger manual market scan
+        logger.info("Manual market scan triggered via API")
+        asyncio.create_task(trading_orchestrator.run_market_scan())
+        
+        return JSONResponse(content={
+            "status": "scan_triggered",
+            "message": "Market scan started manually",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Manual scan trigger failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         
     except Exception as e:
         logger.error(f"System status check failed: {e}")

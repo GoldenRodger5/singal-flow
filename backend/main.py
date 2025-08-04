@@ -181,16 +181,32 @@ class SignalFlowOrchestrator:
     def schedule_tasks(self):
         """Schedule trading and learning tasks."""
         # Schedule market scans every minute for full automation
-        schedule.every(1).minutes.do(lambda: asyncio.create_task(self.run_market_scan()))
+        schedule.every(1).minutes.do(self._schedule_market_scan)
         
-        # Schedule learning tasks
-        schedule.every(30).minutes.do(lambda: asyncio.create_task(self.learning_manager.run_comprehensive_learning()))
-        schedule.every(2).hours.do(lambda: asyncio.create_task(self.learning_manager.run_strategy_validation()))
+        # Schedule learning tasks  
+        schedule.every(30).minutes.do(self._schedule_learning)
+        schedule.every(2).hours.do(self._schedule_validation)
         
         # Schedule summary generation  
-        schedule.every().day.at("16:00").do(lambda: asyncio.create_task(self.generate_daily_summary()))
+        schedule.every().day.at("16:00").do(self._schedule_daily_summary)
         
         logger.info("Trading and AI learning tasks scheduled (full automation mode)")
+    
+    def _schedule_market_scan(self):
+        """Schedule market scan as async task."""
+        asyncio.create_task(self.run_market_scan())
+    
+    def _schedule_learning(self):
+        """Schedule learning as async task."""
+        asyncio.create_task(self.learning_manager.run_comprehensive_learning())
+    
+    def _schedule_validation(self):
+        """Schedule validation as async task."""
+        asyncio.create_task(self.learning_manager.run_strategy_validation())
+    
+    def _schedule_daily_summary(self):
+        """Schedule daily summary as async task."""
+        asyncio.create_task(self.generate_daily_summary())
     
     async def run_learning_cycle(self):
         """Run AI learning cycle."""
@@ -290,11 +306,30 @@ class SignalFlowOrchestrator:
         self.schedule_tasks()
         self.is_running = True
         
+        # Send startup notification
+        try:
+            from services.telegram_trading import telegram_trading
+            await telegram_trading.send_message(
+                "🚀 *TRADING SYSTEM STARTING*\n\n"
+                f"✅ System: Initializing\n"
+                f"⏰ Time: {datetime.now().strftime('%H:%M:%S EST')}\n"
+                f"📡 Mode: Paper Trading\n"
+                f"🎯 Market Scanning: Starting\n"
+                f"📊 Schedule: Every 1 minute\n\n"
+                "Running initial market scan now..."
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send startup notification: {e}")
+        
         # Start continuous learning in background
         learning_task = asyncio.create_task(self.learning_manager.start_continuous_learning())
         
         # Run initial screener
         await self.run_morning_screener()
+        
+        # Run immediate market scan to test
+        logger.info("Running immediate market scan for testing...")
+        await self.run_market_scan()
         
         # Main event loop
         try:
