@@ -174,7 +174,28 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Quick health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+    try:
+        # Test database connection
+        db = get_db()
+        test_result = await db.log_system_health("health_check", "testing", {"endpoint": "health"})
+        
+        return {
+            "status": "healthy", 
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "database": "connected" if test_result else "failed",
+            "services": {
+                "database": "operational" if test_result else "error",
+                "api": "operational"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy", 
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "error": str(e),
+            "database": "failed"
+        }
 
 
 @app.get("/health/detailed")
@@ -232,11 +253,35 @@ async def websocket_health_monitor(websocket: WebSocket):
 async def get_active_trades():
     """Get all active trades"""
     try:
-        trades = await get_db().get_active_trades()
-        return JSONResponse(content=trades)
+        # Test database connection first
+        db = get_db()
+        if not db:
+            return JSONResponse(content={"trades": [], "message": "Database not initialized"})
+        
+        # Get active trades or return empty array if none exist
+        trades = await db.get_active_trades()
+        
+        # If no trades exist, return empty array with helpful message
+        if not trades:
+            return JSONResponse(content={
+                "trades": [],
+                "message": "No active trades found", 
+                "status": "success",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        
+        return JSONResponse(content={"trades": trades, "count": len(trades)})
     except Exception as e:
         logger.error(f"Failed to get active trades: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return detailed error for debugging
+        return JSONResponse(
+            status_code=500, 
+            content={
+                "error": str(e),
+                "endpoint": "/api/trades/active",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
 
 
 @app.get("/api/trades/performance")
@@ -442,11 +487,35 @@ async def execute_trade(trade_data: Dict[str, Any]):
 async def get_recent_ai_decisions(limit: int = 50):
     """Get recent AI trading decisions"""
     try:
-        decisions = await get_db().get_recent_decisions(limit)
-        return JSONResponse(content=decisions)
+        # Test database connection first
+        db = get_db()
+        if not db:
+            return JSONResponse(content={"decisions": [], "message": "Database not initialized"})
+        
+        # Get recent decisions or return empty array if none exist
+        decisions = await db.get_recent_decisions(limit)
+        
+        # If no decisions exist, return empty array with helpful message
+        if not decisions:
+            return JSONResponse(content={
+                "decisions": [],
+                "message": "No AI decisions found", 
+                "status": "success",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        
+        return JSONResponse(content={"decisions": decisions, "count": len(decisions)})
     except Exception as e:
         logger.error(f"Failed to get AI decisions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return detailed error for debugging
+        return JSONResponse(
+            status_code=500, 
+            content={
+                "error": str(e),
+                "endpoint": "/api/ai/decisions/recent",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
 
 
 # ==================== AI SIGNAL TRACKING ENDPOINTS ====================
