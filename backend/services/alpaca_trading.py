@@ -16,10 +16,16 @@ class AlpacaTradingService:
     def __init__(self):
         """Initialize Alpaca trading service."""
         self.config = Config()
+        
+        # Ensure we have the required API credentials
+        if not self.config.ALPACA_API_KEY or not self.config.ALPACA_SECRET:
+            raise ValueError("Alpaca API credentials not configured. Set ALPACA_API_KEY and ALPACA_SECRET.")
+        
+        # Initialize Alpaca API with explicit credentials (not relying on env vars)
         self.api = tradeapi.REST(
-            self.config.ALPACA_API_KEY,
-            self.config.ALPACA_SECRET,
-            self.config.ALPACA_BASE_URL,
+            key_id=self.config.ALPACA_API_KEY,
+            secret_key=self.config.ALPACA_SECRET,
+            base_url=self.config.ALPACA_BASE_URL,
             api_version='v2'
         )
         

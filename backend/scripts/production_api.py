@@ -67,8 +67,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize trading service
-trading_service = AlpacaTradingService()
+# Global trading service - will be initialized on first access
+trading_service = None
+
+def get_trading_service():
+    """Get trading service with lazy initialization."""
+    global trading_service
+    if trading_service is None:
+        trading_service = AlpacaTradingService()
+    return trading_service
 
 # Initialize the main trading orchestrator
 trading_orchestrator = None
@@ -89,7 +96,7 @@ async def startup_event():
     
     # Verify trading service
     try:
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         logger.info(f"Trading service connected. Account: {account.status if account else 'Unknown'}")
     except Exception as e:
         logger.error(f"Trading service initialization failed: {e}")
@@ -247,7 +254,7 @@ async def get_trade_performance(symbol: str = None, days: int = 30):
 async def get_account_info():
     """Get trading account information"""
     try:
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
         
@@ -271,7 +278,7 @@ async def get_account_info():
 async def get_positions():
     """Get current positions"""
     try:
-        positions = await trading_service.get_positions()
+        positions = await get_trading_service().get_positions()
         position_data = []
         
         for pos in positions:
@@ -297,7 +304,7 @@ async def get_holdings():
     """Get current holdings from the trading system (frontend compatibility endpoint)."""
     try:
         # Get positions from Alpaca (paper trading account)
-        positions = await trading_service.get_positions()
+        positions = await get_trading_service().get_positions()
         
         holdings = []
         for position in positions:
@@ -325,7 +332,7 @@ async def get_holdings():
 async def get_portfolio_summary():
     """Get portfolio summary from the trading system (frontend compatibility endpoint)."""
     try:
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         
         return JSONResponse(content={
             "equity": float(account.equity),
@@ -347,7 +354,7 @@ async def get_performance_history():
     """Get performance history for charts"""
     try:
         # Get account data for current portfolio value
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         current_value = float(account.portfolio_value)
         
         # Get trade history to calculate performance over time
@@ -733,12 +740,12 @@ async def emergency_stop():
     """Emergency stop all trading activities"""
     try:
         # Cancel all pending orders
-        orders = await trading_service.get_orders()
+        orders = await get_trading_service().get_orders()
         cancelled_orders = []
         
         for order in orders:
             try:
-                await trading_service.cancel_order(order.id)
+                await get_trading_service().cancel_order(order.id)
                 cancelled_orders.append(order.id)
             except Exception as e:
                 logger.error(f"Failed to cancel order {order.id}: {e}")
@@ -816,13 +823,13 @@ async def get_detailed_holdings():
     """Get detailed holdings with enhanced metrics - NO MOCK DATA"""
     try:
         # Get real positions from Alpaca
-        positions = await trading_service.get_positions()
+        positions = await get_trading_service().get_positions()
         
         if not positions:
             raise HTTPException(status_code=404, detail="No positions found in account")
         
         # Get account info for portfolio calculations
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         total_equity = float(account.equity)
         
         detailed_holdings = []
@@ -1033,9 +1040,9 @@ async def execute_control_action(action: str, request_data: Dict[str, Any] = Non
             
             try:
                 # Cancel all open orders through Alpaca
-                orders = await trading_service.get_orders(status='open')
+                orders = await get_trading_service().get_orders(status='open')
                 for order in orders:
-                    await trading_service.cancel_order(order.id)
+                    await get_trading_service().cancel_order(order.id)
                     logger.info(f"Emergency cancelled order: {order.id}")
                     
                 logger.warning("EMERGENCY STOP ACTIVATED - All trading halted")
@@ -1059,9 +1066,9 @@ async def execute_control_action(action: str, request_data: Dict[str, Any] = Non
             # Trigger comprehensive data synchronization
             try:
                 # Sync account data
-                account = await trading_service.get_account()
-                positions = await trading_service.get_positions()
-                orders = await trading_service.get_orders()
+                account = await get_trading_service().get_account()
+                positions = await get_trading_service().get_positions()
+                orders = await get_trading_service().get_orders()
                 
                 sync_results = {
                     "account_synced": bool(account),
@@ -1099,7 +1106,7 @@ async def get_control_status():
     """Get current control panel status"""
     try:
         # In production, also check actual system states
-        account = await trading_service.get_account()
+        account = await get_trading_service().get_account()
         
         return JSONResponse(content={
             "control_state": control_state,
