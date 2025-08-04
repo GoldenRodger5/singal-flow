@@ -311,17 +311,17 @@ regime_score = (
 ### **🔑 Required API Keys**
 ```env
 # AI & Machine Learning
-OPENAI_API_KEY=your_openai_key                    # GPT-4o for complex analysis
-ANTHROPIC_API_KEY=your_anthropic_key              # Claude for sentiment analysis
+OPENAI_API_KEY=YOUR_OPENAI_KEY                    # GPT-4o for complex analysis
+ANTHROPIC_API_KEY=YOUR_ANTHROPIC_KEY              # Claude for sentiment analysis
 
 # Trading & Market Data  
-ALPACA_API_KEY=your_alpaca_key                    # Paper/live trading broker
-ALPACA_SECRET_KEY=your_alpaca_secret              # Broker authentication
-POLYGON_API_KEY=your_polygon_key                  # Real-time market data
+ALPACA_API_KEY=YOUR_ALPACA_KEY                    # Paper/live trading broker
+ALPACA_SECRET_KEY=YOUR_ALPACA_SECRET              # Broker authentication
+POLYGON_API_KEY=YOUR_POLYGON_KEY                  # Real-time market data
 
 # Notifications
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token        # Interactive notifications
-TELEGRAM_CHAT_ID=your_telegram_chat_id            # Message destination
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN        # Interactive notifications
+TELEGRAM_CHAT_ID=YOUR_TELEGRAM_CHAT_ID            # Message destination
 
 # Database
 MONGODB_URL=your_mongodb_atlas_url                # Cloud database storage

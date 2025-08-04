@@ -48,12 +48,12 @@ npx vercel --prod
 
 ### Backend (Railway)
 ```env
-ALPACA_API_KEY=your_alpaca_key
-ALPACA_SECRET=your_alpaca_secret
+ALPACA_API_KEY=YOUR_ALPACA_KEY
+ALPACA_SECRET=YOUR_ALPACA_SECRET
 ALPACA_BASE_URL=https://paper-api.alpaca.markets
-OPENAI_API_KEY=your_openai_key
-POLYGON_API_KEY=your_polygon_key
-MONGODB_URL=your_mongodb_url
+OPENAI_API_KEY=YOUR_OPENAI_KEY
+POLYGON_API_KEY=YOUR_POLYGON_KEY
+MONGODB_URL=YOUR_MONGODB_URL
 ```
 
 ### Frontend (Vercel)
