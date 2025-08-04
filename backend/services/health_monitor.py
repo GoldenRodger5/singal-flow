@@ -14,7 +14,7 @@ import json
 import threading
 import time
 
-from services.database_manager import db_manager
+from services.database_manager import get_db_manager
 from services.alpaca_trading import AlpacaTradingService
 
 
@@ -71,6 +71,8 @@ class SystemHealthMonitor:
     async def check_database_health(self) -> Dict:
         """Check MongoDB connectivity and performance"""
         try:
+            db_manager = get_db_manager()
+            
             # Test basic connectivity
             await db_manager.async_db.admin.command('ping')
             
@@ -128,6 +130,8 @@ class SystemHealthMonitor:
     async def check_ai_agents_health(self) -> Dict:
         """Check if AI agents are running and responsive"""
         try:
+            db_manager = get_db_manager()
+            
             # Check recent AI decisions from database
             recent_decisions = await db_manager.get_recent_decisions(limit=10)
             
@@ -193,6 +197,7 @@ class SystemHealthMonitor:
             }
             
             # Log to database
+            db_manager = get_db_manager()
             await db_manager.log_system_health(
                 'overall_system', 
                 overall_status,

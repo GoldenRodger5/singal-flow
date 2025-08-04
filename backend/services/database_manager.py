@@ -4,6 +4,7 @@ Handles all database operations with atomic transactions for trade safety
 """
 import os
 import json
+import ssl
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional
 from pymongo.mongo_client import MongoClient
@@ -37,67 +38,97 @@ class DatabaseManager:
     """Production-ready MongoDB manager for trading data"""
     
     def __init__(self):
-        self.mongo_url = os.getenv('MONGODB_URL', 'mongodb+srv://username:password@cluster.mongodb.net/')
-        self.db_name = os.getenv('MONGODB_NAME', 'signal_flow_trading')
-        self.connection_timeout = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 10000))
-        self.server_timeout = int(os.getenv('MONGODB_SERVER_TIMEOUT', 10000))
-        
-        # Configure MongoDB Atlas connection with proper settings
-        if 'mongodb+srv' in self.mongo_url:
-            # MongoDB Atlas connection with enhanced settings
-            self.client = MongoClient(
-                self.mongo_url, 
-                server_api=ServerApi('1'),
-                connectTimeoutMS=self.connection_timeout,
-                serverSelectionTimeoutMS=self.server_timeout,
-                maxPoolSize=50,
-                retryWrites=True
-            )
-            self.async_client = AsyncIOMotorClient(
-                self.mongo_url, 
-                server_api=ServerApi('1'),
-                connectTimeoutMS=self.connection_timeout,
-                serverSelectionTimeoutMS=self.server_timeout,
-                maxPoolSize=50,
-                retryWrites=True
-            )
-        else:
-            # Local MongoDB connection
-            self.client = MongoClient(
-                self.mongo_url,
-                connectTimeoutMS=self.connection_timeout,
-                serverSelectionTimeoutMS=self.server_timeout
-            )
-            self.async_client = AsyncIOMotorClient(
-                self.mongo_url,
-                connectTimeoutMS=self.connection_timeout,
-                serverSelectionTimeoutMS=self.server_timeout
-            )
-        
-        self.db = self.client[self.db_name]
-        self.async_db = self.async_client[self.db_name]
-        
-        # Test connection with retry logic for Atlas
-        self._test_connection()
-        self._setup_collections()
-        logger.info(f"Database configured: {self.db_name}")
+        try:
+            # Load environment variables from .env file if running locally
+            if os.path.exists('.env'):
+                from dotenv import load_dotenv
+                load_dotenv()
+                
+            # Get MongoDB URL and validate format
+            self.mongo_url = os.getenv('MONGODB_URL', 'mongodb+srv://username:password@cluster.mongodb.net/')
+            
+            # Validate MongoDB URL format
+            if not self.mongo_url or self.mongo_url == 'mongodb+srv://username:password@cluster.mongodb.net/':
+                raise ValueError("MONGODB_URL environment variable not properly configured")
+                
+            # Remove any extra spaces or invalid characters
+            self.mongo_url = self.mongo_url.strip()
+            
+            self.db_name = os.getenv('MONGODB_NAME', 'signal_flow_trading')
+            self.connection_timeout = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 30000))  # Increased timeout for Railway
+            self.server_timeout = int(os.getenv('MONGODB_SERVER_TIMEOUT', 30000))  # Increased timeout for Railway
+            
+            logger.info(f"Initializing MongoDB connection to: {self.mongo_url[:30]}...")
+            
+            # Configure MongoDB Atlas connection with Railway-friendly settings
+            if 'mongodb+srv' in self.mongo_url:
+                # MongoDB Atlas connection - Railway optimized
+                self.client = MongoClient(
+                    self.mongo_url, 
+                    server_api=ServerApi('1'),
+                    connectTimeoutMS=self.connection_timeout,
+                    serverSelectionTimeoutMS=self.server_timeout,
+                    socketTimeoutMS=60000,  # 60 second socket timeout
+                    maxPoolSize=10,  # Limit connection pool for Railway
+                    retryWrites=True,
+                    w='majority'
+                )
+                self.async_client = AsyncIOMotorClient(
+                    self.mongo_url, 
+                    server_api=ServerApi('1'),
+                    connectTimeoutMS=self.connection_timeout,
+                    serverSelectionTimeoutMS=self.server_timeout,
+                    socketTimeoutMS=60000,
+                    maxPoolSize=10,
+                    retryWrites=True,
+                    w='majority'
+                )
+            else:
+                # Local MongoDB connection
+                self.client = MongoClient(
+                    self.mongo_url,
+                    connectTimeoutMS=self.connection_timeout,
+                    serverSelectionTimeoutMS=self.server_timeout
+                )
+                self.async_client = AsyncIOMotorClient(
+                    self.mongo_url,
+                    connectTimeoutMS=self.connection_timeout,
+                    serverSelectionTimeoutMS=self.server_timeout
+                )
+            
+            self.db = self.client[self.db_name]
+            self.async_db = self.async_client[self.db_name]
+            
+            # Test connection with retry logic for Railway/Atlas
+            self._test_connection()
+            self._setup_collections()
+            logger.info(f"Database configured: {self.db_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize DatabaseManager: {e}")
+            raise
     
     def _test_connection(self):
-        """Test MongoDB connection with retry logic for Atlas"""
-        max_retries = 3
+        """Test MongoDB connection with retry logic for Railway/Atlas"""
+        max_retries = 5  # Increased retries for Railway
         for attempt in range(max_retries):
             try:
-                self.client.admin.command('ping')
+                # Test connection with timeout
+                self.client.admin.command('ping', maxTimeMS=10000)
                 logger.info(f"MongoDB Atlas connected successfully: {self.db_name}")
                 return
             except Exception as e:
                 if attempt == max_retries - 1:
                     logger.error(f"MongoDB Atlas connection failed after {max_retries} attempts: {e}")
+                    # Don't raise in Railway - allow service to start and retry later
+                    if os.getenv('RAILWAY_ENVIRONMENT'):
+                        logger.warning("Running in Railway - allowing startup despite connection failure")
+                        return
                     raise
                 else:
-                    logger.warning(f"MongoDB Atlas connection attempt {attempt + 1} failed, retrying...")
+                    logger.warning(f"MongoDB Atlas connection attempt {attempt + 1} failed, retrying in {2 * (attempt + 1)} seconds...")
                     import time
-                    time.sleep(2)  # Wait 2 seconds before retry
+                    time.sleep(2 * (attempt + 1))  # Progressive backoff
     
     def _setup_collections(self):
         """Setup collections and indexes for optimal performance"""
@@ -632,66 +663,22 @@ def get_db_manager():
     """Get database manager instance with lazy initialization."""
     global _db_manager
     if _db_manager is None:
-        try:
-            _db_manager = DatabaseManager()
-        except Exception as e:
-            logger.warning(f"Database connection failed: {e}")
-            # Return a mock database manager for development/testing
-            _db_manager = MockDatabaseManager()
+        _db_manager = DatabaseManager()
+        logger.info("✅ Connected to MongoDB Atlas - PRODUCTION MODE")
     return _db_manager
 
-class MockDatabaseManager:
-    """Mock database manager for when MongoDB is unavailable."""
-    
-    async def log_trade(self, *args, **kwargs):
-        logger.info("Mock DB: Trade logged")
-        return {"status": "mock"}
-    
-    async def get_trades(self, *args, **kwargs):
-        return []
-    
-    async def get_active_trades(self, *args, **kwargs):
-        logger.info("Mock DB: get_active_trades called")
-        return []
-    
-    async def log_ai_decision(self, *args, **kwargs):
-        logger.info("Mock DB: AI decision logged")
-        return {"status": "mock"}
-    
-    async def get_recent_decisions(self, *args, **kwargs):
-        return []
-    
-    async def get_trade_performance(self, *args, **kwargs):
-        return {}
-    
-    async def log_system_health(self, *args, **kwargs):
-        logger.info("Mock DB: System health logged")
-        return True
-    
-    async def get_recent_trades(self, *args, **kwargs):
-        return []
-    
-    def close(self):
-        logger.info("Mock DB: Connection closed")
-    
-    def __getattr__(self, name):
-        """Handle any other method calls."""
-        async def mock_async_method(*args, **kwargs):
-            logger.info(f"Mock DB: {name} called")
-            return {"status": "mock"}
-        
-        def mock_sync_method(*args, **kwargs):
-            logger.info(f"Mock DB: {name} called")
-            return {"status": "mock"}
-        
-        # Return async method for common async operations
-        if name in ['save_trade', 'update_trade_status', 'save_ai_decision', 
-                   'get_learning_summary', 'get_comprehensive_learning_summary',
-                   'get_training_data', 'get_market_sentiment_history',
-                   'get_pattern_success_rates', 'get_strategy_performance',
-                   'get_market_regime_history']:
-            return mock_async_method
-        return mock_sync_method
+# Lazy initialization - only create when first accessed
+_db_manager = None
 
-# Backward compatibility
-db_manager = get_db_manager()
+# For backward compatibility, create a lazy property that only initializes when accessed
+class LazyDBManager:
+    def __getattr__(self, name):
+        db_mgr = get_db_manager()
+        return getattr(db_mgr, name)
+    
+    def __call__(self, *args, **kwargs):
+        db_mgr = get_db_manager()
+        return db_mgr(*args, **kwargs)
+
+# Backward compatibility - lazy initialization
+db_manager = LazyDBManager()

@@ -14,16 +14,43 @@ from typing import Dict, List, Any
 from loguru import logger
 
 from services.health_monitor import health_monitor
-from services.database_manager import db_manager, TradeRecord
+from services.database_manager import get_db_manager, TradeRecord
+
+# Global database manager - will be initialized on first access
+db_manager = None
+
+def get_db():
+    """Get database manager with lazy initialization."""
+    global db_manager
+    if db_manager is None:
+        db_manager = get_db_manager()
+    return db_manager
+
+# Initialize db_manager for the module
+db_manager = get_db()
 from services.alpaca_trading import AlpacaTradingService
 from services.telegram_trading import telegram_trading
 # from services.ai_data_collector import ai_data_collector  # Disabled due to yfinance conflict
 
-# Import the main trading orchestrator
+# Import the main trading orchestrator - lazy loading to avoid startup issues
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
-from main import SignalFlowOrchestrator
+
+# Global orchestrator - will be initialized on first access
+orchestrator = None
+
+def get_orchestrator():
+    """Get orchestrator with lazy initialization."""
+    global orchestrator
+    if orchestrator is None:
+        try:
+            from main import SignalFlowOrchestrator
+            orchestrator = SignalFlowOrchestrator()
+        except Exception as e:
+            logger.error(f"Failed to initialize orchestrator: {e}")
+            orchestrator = None
+    return orchestrator
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -70,10 +97,13 @@ async def startup_event():
     
     # Start the main trading orchestrator
     try:
-        trading_orchestrator = SignalFlowOrchestrator()
-        # Start the trading system in background
-        asyncio.create_task(trading_orchestrator.start())
-        logger.info("✅ Trading system started successfully")
+        trading_orchestrator = get_orchestrator()
+        if trading_orchestrator:
+            # Start the trading system in background
+            asyncio.create_task(trading_orchestrator.start())
+            logger.info("✅ Trading system started successfully")
+        else:
+            logger.warning("⚠️ Trading orchestrator not available")
         
         # Send startup notification
         try:

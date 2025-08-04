@@ -190,6 +190,19 @@ class SignalFlowOrchestrator:
         # Schedule summary generation  
         schedule.every().day.at("16:00").do(self._schedule_daily_summary)
         
+        # Schedule market open/close notifications (EST)
+        schedule.every().monday.at("09:30").do(self._schedule_market_open_notification)
+        schedule.every().tuesday.at("09:30").do(self._schedule_market_open_notification)
+        schedule.every().wednesday.at("09:30").do(self._schedule_market_open_notification)
+        schedule.every().thursday.at("09:30").do(self._schedule_market_open_notification)
+        schedule.every().friday.at("09:30").do(self._schedule_market_open_notification)
+        
+        schedule.every().monday.at("16:00").do(self._schedule_market_close_notification)
+        schedule.every().tuesday.at("16:00").do(self._schedule_market_close_notification)
+        schedule.every().wednesday.at("16:00").do(self._schedule_market_close_notification)
+        schedule.every().thursday.at("16:00").do(self._schedule_market_close_notification)
+        schedule.every().friday.at("16:00").do(self._schedule_market_close_notification)
+        
         logger.info("Trading and AI learning tasks scheduled (full automation mode)")
     
     def _schedule_market_scan(self):
@@ -207,6 +220,14 @@ class SignalFlowOrchestrator:
     def _schedule_daily_summary(self):
         """Schedule daily summary as async task."""
         asyncio.create_task(self.generate_daily_summary())
+    
+    def _schedule_market_open_notification(self):
+        """Schedule market open notification as async task."""
+        asyncio.create_task(self.send_market_open_notification())
+    
+    def _schedule_market_close_notification(self):
+        """Schedule market close notification as async task."""
+        asyncio.create_task(self.send_market_close_notification())
     
     async def run_learning_cycle(self):
         """Run AI learning cycle."""
@@ -298,6 +319,36 @@ class SignalFlowOrchestrator:
                 summary.append(f"• {opp}")
         
         return "\n".join(summary) if summary else "Strategy validation completed"
+    
+    async def send_market_open_notification(self):
+        """Send market open notification"""
+        try:
+            from services.telegram_trading import telegram_trading
+            await telegram_trading.send_message(
+                "🔔 *MARKET OPEN*\n\n"
+                f"📈 US Markets are now OPEN\n"
+                f"⏰ {datetime.now().strftime('%H:%M:%S EST')}\n"
+                f"🤖 AI system is actively monitoring\n"
+                f"🎯 Ready to execute trades"
+            )
+            logger.info("Market open notification sent")
+        except Exception as e:
+            logger.error(f"Failed to send market open notification: {e}")
+    
+    async def send_market_close_notification(self):
+        """Send market close notification"""
+        try:
+            from services.telegram_trading import telegram_trading
+            await telegram_trading.send_message(
+                "🔔 *MARKET CLOSED*\n\n"
+                f"📉 US Markets are now CLOSED\n"
+                f"⏰ {datetime.now().strftime('%H:%M:%S EST')}\n"
+                f"📊 Processing end-of-day analysis\n"
+                f"💤 System entering post-market mode"  
+            )
+            logger.info("Market close notification sent")
+        except Exception as e:
+            logger.error(f"Failed to send market close notification: {e}")
     
     async def start(self):
         """Start the trading system with AI learning."""

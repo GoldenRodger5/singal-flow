@@ -135,7 +135,10 @@ class MongoAtlasTest:
             print("\n3. Testing database manager...")
             
             # Import after testing basic connection
-            from services.database_manager import db_manager, TradeRecord
+            from services.database_manager import get_db_manager, TradeRecord
+            
+            # Use lazy initialization
+            db_manager = get_db_manager()
             
             # Test trade record creation
             test_trade = TradeRecord(

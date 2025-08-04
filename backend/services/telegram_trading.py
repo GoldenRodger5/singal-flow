@@ -268,5 +268,29 @@ class TelegramTradingService:
             return {'success': False, 'error': str(e)}
 
 
-# Global instance for webhook handlers
-telegram_trading = TelegramTradingService()
+# Global instance for webhook handlers - lazy initialization
+_telegram_trading = None
+
+def get_telegram_trading():
+    """Get Telegram trading service with lazy initialization"""
+    global _telegram_trading
+    if _telegram_trading is None:
+        _telegram_trading = TelegramTradingService()
+    return _telegram_trading
+
+# Create module-level instance that can be imported
+telegram_trading = None
+
+def _init_telegram_trading():
+    global telegram_trading
+    if telegram_trading is None:
+        telegram_trading = TelegramTradingService()
+    return telegram_trading
+
+# Initialize only when accessed
+class LazyTelegramTrading:
+    def __getattr__(self, name):
+        service = _init_telegram_trading()
+        return getattr(service, name)
+
+telegram_trading = LazyTelegramTrading()

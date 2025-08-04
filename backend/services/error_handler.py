@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from loguru import logger
 import functools
 
-from services.database_manager import db_manager
+from services.database_manager import get_db_manager
 
 
 class CircuitBreakerState(Enum):
@@ -100,6 +100,7 @@ class CircuitBreaker:
             self._record_failure()
             
             # Log circuit breaker activity
+            db_manager = get_db_manager()
             await db_manager.log_system_health(
                 f"circuit_breaker_{self.name}",
                 "failure",
@@ -200,6 +201,7 @@ class ErrorHandler:
                 await asyncio.sleep(delay)
         
         # Log final failure
+        db_manager = get_db_manager()
         await db_manager.log_system_health(
             "retry_exhausted",
             "failure",
@@ -231,6 +233,7 @@ class ErrorHandler:
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
+        db_manager = get_db_manager()
         await db_manager.log_system_health("trading_error", "error", error_data)
         
         # Determine if this is a critical error requiring immediate action
@@ -278,6 +281,7 @@ class ErrorHandler:
             logger.error(f"Emergency order cancellation failed: {e}")
         
         # Log emergency action
+        db_manager = get_db_manager()
         await db_manager.log_system_health(
             "emergency_protocols",
             "executed",
@@ -313,6 +317,7 @@ class ErrorHandler:
         
         logger.warning(f"Remedial action suggested for {error_type}: {suggestion}")
         
+        db_manager = get_db_manager()
         await db_manager.log_system_health(
             "remedial_suggestion",
             "suggested",
