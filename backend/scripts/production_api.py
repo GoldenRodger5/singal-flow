@@ -89,7 +89,7 @@ async def startup_event():
     
     # Initialize database connections
     try:
-        await db_manager.log_system_health("api_server", "starting")
+        await get_db().log_system_health("api_server", "starting")
         logger.info("Database connection verified")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
@@ -145,7 +145,7 @@ async def shutdown_event():
             logger.error(f"Error stopping trading system: {e}")
     
     health_monitor.stop_monitoring()
-    db_manager.close()
+    get_db().close()
     logger.info("✅ Signal Flow API shutdown complete")
 
 
@@ -232,7 +232,7 @@ async def websocket_health_monitor(websocket: WebSocket):
 async def get_active_trades():
     """Get all active trades"""
     try:
-        trades = await db_manager.get_active_trades()
+        trades = await get_db().get_active_trades()
         return JSONResponse(content=trades)
     except Exception as e:
         logger.error(f"Failed to get active trades: {e}")
@@ -243,7 +243,7 @@ async def get_active_trades():
 async def get_trade_performance(symbol: str = None, days: int = 30):
     """Get trading performance analytics"""
     try:
-        performance = await db_manager.get_trade_performance(symbol, days)
+        performance = await get_db().get_trade_performance(symbol, days)
         return JSONResponse(content=performance)
     except Exception as e:
         logger.error(f"Failed to get performance data: {e}")
@@ -358,7 +358,7 @@ async def get_performance_history():
         current_value = float(account.portfolio_value)
         
         # Get trade history to calculate performance over time
-        trades = await db_manager.get_recent_trades(limit=100)
+        trades = await get_db().get_recent_trades(limit=100)
         
         # Generate performance data points
         performance_data = []
@@ -442,7 +442,7 @@ async def execute_trade(trade_data: Dict[str, Any]):
 async def get_recent_ai_decisions(limit: int = 50):
     """Get recent AI trading decisions"""
     try:
-        decisions = await db_manager.get_recent_decisions(limit)
+        decisions = await get_db().get_recent_decisions(limit)
         return JSONResponse(content=decisions)
     except Exception as e:
         logger.error(f"Failed to get AI decisions: {e}")
@@ -541,7 +541,7 @@ async def get_ai_learning_summary():
     """Get comprehensive AI learning data summary"""
     try:
         # Get learning summary from database
-        summary = await db_manager.get_learning_summary()
+        summary = await get_db().get_learning_summary()
         return JSONResponse(content=summary)
     except Exception as e:
         logger.error(f"Failed to get AI learning summary: {e}")
@@ -557,7 +557,7 @@ async def get_ai_market_analysis():
     """Get real-time AI market analysis"""
     try:
         # Get recent AI decisions and market data for analysis
-        recent_decisions = await db_manager.get_recent_decisions(limit=10)
+        recent_decisions = await get_db().get_recent_decisions(limit=10)
         
         # Calculate sentiment from recent decisions
         sentiment_scores = []
@@ -618,7 +618,7 @@ async def get_ai_market_analysis():
         logger.error(f"Failed to get AI analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     try:
-        summary = await db_manager.get_comprehensive_learning_summary()
+        summary = await get_db().get_comprehensive_learning_summary()
         # Get collection summary (disabled due to yfinance conflict)
         # collection_summary = await ai_data_collector.get_collection_summary()
         
@@ -636,7 +636,7 @@ async def get_ai_market_analysis():
 async def get_training_data_for_symbol(symbol: str, days: int = 30, feature_type: str = None):
     """Get training data for a specific symbol"""
     try:
-        training_data = await db_manager.get_training_data(symbol, feature_type, days)
+        training_data = await get_db().get_training_data(symbol, feature_type, days)
         return JSONResponse(content=training_data)
     except Exception as e:
         logger.error(f"Failed to get training data for {symbol}: {e}")
@@ -647,7 +647,7 @@ async def get_training_data_for_symbol(symbol: str, days: int = 30, feature_type
 async def get_market_sentiment_history(symbol: str, days: int = 7):
     """Get market sentiment history for a symbol"""
     try:
-        sentiment_history = await db_manager.get_market_sentiment_history(symbol, days)
+        sentiment_history = await get_db().get_market_sentiment_history(symbol, days)
         return JSONResponse(content=sentiment_history)
     except Exception as e:
         logger.error(f"Failed to get sentiment history for {symbol}: {e}")
@@ -658,7 +658,7 @@ async def get_market_sentiment_history(symbol: str, days: int = 7):
 async def get_pattern_analysis(pattern_type: str = None):
     """Get price pattern success rates and analysis"""
     try:
-        pattern_rates = await db_manager.get_pattern_success_rates(pattern_type)
+        pattern_rates = await get_db().get_pattern_success_rates(pattern_type)
         return JSONResponse(content=pattern_rates)
     except Exception as e:
         logger.error(f"Failed to get pattern analysis: {e}")
@@ -669,7 +669,7 @@ async def get_pattern_analysis(pattern_type: str = None):
 async def get_ai_strategy_performance(strategy_name: str = None, days: int = 30):
     """Get AI strategy performance analytics"""
     try:
-        performance = await db_manager.get_strategy_performance(strategy_name, days)
+        performance = await get_db().get_strategy_performance(strategy_name, days)
         return JSONResponse(content=performance)
     except Exception as e:
         logger.error(f"Failed to get strategy performance: {e}")
@@ -680,7 +680,7 @@ async def get_ai_strategy_performance(strategy_name: str = None, days: int = 30)
 async def get_market_regime_history(days: int = 30):
     """Get market regime classification history"""
     try:
-        regime_history = await db_manager.get_market_regime_history(days)
+        regime_history = await get_db().get_market_regime_history(days)
         return JSONResponse(content=regime_history)
     except Exception as e:
         logger.error(f"Failed to get market regime history: {e}")
@@ -709,7 +709,7 @@ async def websocket_trade_updates(websocket: WebSocket):
     
     try:
         # Send initial active trades
-        active_trades = await db_manager.get_active_trades()
+        active_trades = await get_db().get_active_trades()
         await websocket.send_text(json.dumps({
             'type': 'initial_trades',
             'data': active_trades
@@ -721,7 +721,7 @@ async def websocket_trade_updates(websocket: WebSocket):
         while True:
             message = await websocket.receive_text()
             if message == "get_trades":
-                current_trades = await db_manager.get_active_trades()
+                current_trades = await get_db().get_active_trades()
                 await websocket.send_text(json.dumps({
                     'type': 'trade_update',
                     'data': current_trades
@@ -751,7 +751,7 @@ async def emergency_stop():
                 logger.error(f"Failed to cancel order {order.id}: {e}")
         
         # Log emergency stop
-        await db_manager.log_system_health(
+        await get_db().log_system_health(
             "emergency_stop", 
             "executed",
             {"cancelled_orders": cancelled_orders}
@@ -774,8 +774,8 @@ async def get_system_status():
     try:
         # Get various system metrics
         health_status = await health_monitor.perform_full_health_check()
-        active_trades = await db_manager.get_active_trades()
-        recent_decisions = await db_manager.get_recent_decisions(limit=10)
+        active_trades = await get_db().get_active_trades()
+        recent_decisions = await get_db().get_recent_decisions(limit=10)
         
         return JSONResponse(content={
             "health": health_status,
