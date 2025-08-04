@@ -26,8 +26,7 @@ def get_db():
         db_manager = get_db_manager()
     return db_manager
 
-# Initialize db_manager for the module
-db_manager = get_db()
+# Do NOT initialize db_manager at import time. Only initialize inside endpoints or functions.
 from services.alpaca_trading import AlpacaTradingService
 from services.telegram_trading import telegram_trading
 # from services.ai_data_collector import ai_data_collector  # Disabled due to yfinance conflict
