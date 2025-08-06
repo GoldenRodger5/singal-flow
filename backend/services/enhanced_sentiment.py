@@ -90,14 +90,16 @@ class EnhancedSentimentAnalyzer:
             else:
                 logger.warning("Reddit API credentials not configured")
         
-        # Twitter API setup
+        # Twitter API setup (disabled to prevent proxies error)
         if TWITTER_AVAILABLE:
             twitter_bearer_token = os.getenv('TWITTER_BEARER_TOKEN')
             
             if twitter_bearer_token:
                 try:
-                    self.twitter_client = tweepy.Client(bearer_token=twitter_bearer_token)
-                    logger.info("✅ Twitter API client initialized")
+                    # Temporarily disable Twitter client to avoid proxies error
+                    # self.twitter_client = tweepy.Client(bearer_token=twitter_bearer_token)
+                    self.twitter_client = None
+                    logger.info("✅ Twitter API client initialized (disabled for stability)")
                 except Exception as e:
                     logger.error(f"Failed to initialize Twitter client: {e}")
             else:

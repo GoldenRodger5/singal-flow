@@ -69,24 +69,21 @@ class SystemHealthMonitor:
             }
     
     async def check_database_health(self) -> Dict:
-        """Check MongoDB connectivity and performance"""
+        """Check MongoDB connection and basic operations"""
         try:
             db_manager = get_db_manager()
             
-            # Test basic connectivity
-            await db_manager.async_db.admin.command('ping')
-            
-            # Get database stats
-            stats = await db_manager.async_db.command('dbStats')
+            # Test connection with a simple operation
+            await db_manager.log_system_health('health_check', 'testing')
             
             # Check recent activity
             recent_trades = await db_manager.get_active_trades()
+            recent_decisions = await db_manager.get_recent_decisions(limit=10)
             
             return {
                 'status': 'healthy',
-                'collections': stats.get('collections', 0),
-                'data_size': stats.get('dataSize', 0),
                 'active_trades': len(recent_trades),
+                'recent_decisions': len(recent_decisions),
                 'last_check': datetime.now(timezone.utc).isoformat()
             }
         except Exception as e:

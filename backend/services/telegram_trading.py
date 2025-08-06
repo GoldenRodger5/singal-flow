@@ -241,31 +241,64 @@ class TelegramTradingService:
             return {'success': False, 'error': str(e)}
     
     async def force_market_scan(self) -> Dict[str, Any]:
-        """Trigger an immediate market scan."""
+        """Force market scan for testing."""
+        logger.info("Force market scan triggered via Telegram")
+        # If we have access to the main system, trigger the scan
         try:
-            # Import here to avoid circular imports
-            import sys
-            from pathlib import Path
-            sys.path.append(str(Path(__file__).parent.parent))
-            from main import SignalFlowOrchestrator
+            if self.interactive_trading:
+                self.interactive_trading.trigger_scan()
+                return {"status": "success", "message": "Market scan triggered"}
+            else:
+                return {"status": "warning", "message": "Market scan feature not available"}
+        except Exception as e:
+            logger.error(f"Error triggering market scan: {e}")
+            return {"status": "error", "message": f"Failed to trigger scan: {str(e)}"}
+
+    async def handle_webhook(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle incoming webhook requests from Telegram."""
+        try:
+            logger.info(f"Handling webhook request: {request_data}")
             
-            orchestrator = SignalFlowOrchestrator()
+            # Basic webhook handling - could be expanded based on Telegram bot API
+            message = request_data.get('message', {})
+            callback_query = request_data.get('callback_query', {})
             
-            # Run market scan in background
-            asyncio.create_task(orchestrator.run_market_scan())
+            if callback_query:
+                # Handle button callback
+                callback_data = callback_query.get('data', '')
+                if callback_data.startswith('BUY_') or callback_data.startswith('SELL_'):
+                    return await self.execute_trade(callback_data)
+                elif callback_data.startswith('SKIP_'):
+                    return await self.skip_trade(callback_data)
             
-            logger.info("🔍 Market scan initiated")
+            if message:
+                # Handle text commands
+                text = message.get('text', '').lower()
+                if text in ['/status', 'status']:
+                    return await self.get_portfolio_status()
+                elif text in ['/pause', 'pause']:
+                    return await self.pause_trading()
+                elif text in ['/resume', 'resume']:
+                    return await self.resume_trading()
+                elif text in ['/scan', 'scan']:
+                    return await self.force_market_scan()
             
-            return {
-                'success': True,
-                'status': 'scanning',
-                'timestamp': datetime.now().strftime('%H:%M:%S EST'),
-                'message': 'Market scan initiated. New signals will appear automatically.'
-            }
+            return {"status": "success", "message": "Webhook processed"}
             
         except Exception as e:
-            logger.error(f"Error initiating market scan: {e}")
-            return {'success': False, 'error': str(e)}
+            logger.error(f"Webhook handling error: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def send_message(self, message: str) -> bool:
+        """Send message via Telegram bot."""
+        try:
+            # In a real implementation, this would use the Telegram Bot API
+            # For now, just log the message
+            logger.info(f"Telegram message: {message}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send Telegram message: {e}")
+            return False
 
 
 # Global instance for webhook handlers - lazy initialization

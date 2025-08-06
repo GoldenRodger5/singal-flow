@@ -1,0 +1,706 @@
+{
+  "total_tests": 37,
+  "successful_tests": 37,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "method": "GET",
+      "endpoint": "/",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 284,
+      "response": {
+        "message": "Signal Flow Trading System API",
+        "version": "2.0.0",
+        "status": "operational",
+        "timestamp": "2025-08-06T03:29:12.849984+00:00",
+        "endpoints": {
+          "health": "/health",
+          "portfolio": "/api/portfolio",
+          "holdings": "/api/holdings",
+          "trades": "/api/trades/active",
+          "ai_analysis": "/api/ai/analysis"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/health",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 139,
+      "response": {
+        "status": "healthy",
+        "timestamp": "2025-08-06T03:29:12.951444+00:00",
+        "database": "failed",
+        "services": {
+          "database": "error",
+          "api": "operational"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/health/detailed",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 757,
+      "response": {
+        "overall": "unhealthy",
+        "components": {
+          "trading_api": {
+            "status": "healthy",
+            "account_status": "ACTIVE",
+            "buying_power": 200000.0,
+            "positions_count": 0,
+            "last_check": "2025-08-06T03:18:30.787459+00:00"
+          },
+          "database": {
+            "status": "healthy",
+            "active_trades": 0,
+            "recent_decisions": 0,
+            "last_check": "2025-08-06T03:18:30.960148+00:00"
+          },
+          "ai_agents": {
+            "status": "warning",
+            "recent_decisions": 0,
+            "total_decisions_today": 0,
+            "last_decision": null,
+            "last_check": "2025-08-06T03:18:31.061000+00:00"
+          },
+          "system_resources": {
+            "status": "healthy",
+            "cpu_percent": 12.2,
+            "memory_percent": 71.5,
+            "memory_available": 7349436416,
+            "disk_percent": 5.5,
+            "disk_free": 192863313920,
+            "last_check": "2025-08-06T03:18:32.066558+00:00"
+          }
+        },
+        "last_check": "2025-08-06T03:29:14.115311+00:00",
+        "uptime": 84318.793289,
+        "error": "'uptime_start'"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/account",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 176,
+      "response": {
+        "account_number": "PA30U9B15I8A",
+        "status": "ACTIVE",
+        "buying_power": 200000.0,
+        "cash": 100000.0,
+        "portfolio_value": 100000.0,
+        "equity": 100000.0,
+        "last_equity": 100000.0,
+        "currency": "USD"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/portfolio",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 153,
+      "response": {
+        "equity": 100000.0,
+        "buying_power": 200000.0,
+        "cash": 100000.0,
+        "portfolio_value": 100000.0,
+        "daytrade_count": 0,
+        "trading_blocked": false,
+        "account_blocked": false
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/holdings",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 31,
+      "response": {
+        "holdings": [],
+        "total_value": 0
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/positions",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/trades/active",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 114,
+      "response": {
+        "trades": [],
+        "message": "No active trades found",
+        "status": "success",
+        "timestamp": "2025-08-06T03:29:14.734428+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/trades/performance",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": {}
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/performance/history",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 1825,
+      "response": {
+        "performance_data": [
+          {
+            "timestamp": "2025-08-05T04:29:14.970279+00:00",
+            "value": 99880.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T05:29:14.970279+00:00",
+            "value": 99890.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T06:29:14.970279+00:00",
+            "value": 99900.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T07:29:14.970279+00:00",
+            "value": 99910.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T08:29:14.970279+00:00",
+            "value": 99920.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T09:29:14.970279+00:00",
+            "value": 99930.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T10:29:14.970279+00:00",
+            "value": 99940.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T11:29:14.970279+00:00",
+            "value": 99950.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T12:29:14.970279+00:00",
+            "value": 99960.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T13:29:14.970279+00:00",
+            "value": 99970.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T14:29:14.970279+00:00",
+            "value": 99980.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T15:29:14.970279+00:00",
+            "value": 99990.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T16:29:14.970279+00:00",
+            "value": 100000.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T17:29:14.970279+00:00",
+            "value": 100010.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T18:29:14.970279+00:00",
+            "value": 100020.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T19:29:14.970279+00:00",
+            "value": 100030.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T20:29:14.970279+00:00",
+            "value": 100040.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T21:29:14.970279+00:00",
+            "value": 100050.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T22:29:14.970279+00:00",
+            "value": 100060.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-05T23:29:14.970279+00:00",
+            "value": 100070.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-06T00:29:14.970279+00:00",
+            "value": 100080.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-06T01:29:14.970279+00:00",
+            "value": 100090.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-06T02:29:14.970279+00:00",
+            "value": 100100.0,
+            "pnl": 0
+          },
+          {
+            "timestamp": "2025-08-06T03:29:14.970279+00:00",
+            "value": 100110.0,
+            "pnl": 0
+          }
+        ],
+        "current_value": 100000.0,
+        "total_pnl": 0
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/analysis",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 441,
+      "response": {
+        "market_sentiment": "Neutral",
+        "sentiment_score": 5.0,
+        "key_insights": [
+          "Market volatility within normal ranges",
+          "AI system actively monitoring for opportunities",
+          "No immediate high-confidence signals detected"
+        ],
+        "recommendations": [
+          "Continue monitoring current positions",
+          "Wait for higher confidence signals",
+          "Review risk management settings"
+        ],
+        "risk_assessment": "Moderate",
+        "confidence_level": 5.0,
+        "last_updated": "2025-08-06T03:29:15.082997+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/decisions/recent",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 116,
+      "response": {
+        "decisions": [],
+        "message": "No AI decisions found",
+        "status": "success",
+        "timestamp": "2025-08-06T03:29:15.194373+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/learning/summary",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 194,
+      "response": {
+        "total_trades": 0,
+        "total_decisions": 0,
+        "total_pnl": 0,
+        "winning_trades": 0,
+        "win_rate": 0,
+        "avg_confidence": 0,
+        "models_trained": 0,
+        "total_predictions": 0,
+        "last_updated": "2025-08-06T03:29:15.305295+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/system/status",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 866,
+      "response": {
+        "health": {
+          "overall": "unhealthy",
+          "components": {
+            "trading_api": {
+              "status": "healthy",
+              "account_status": "ACTIVE",
+              "buying_power": 200000.0,
+              "positions_count": 0,
+              "last_check": "2025-08-06T03:18:30.787459+00:00"
+            },
+            "database": {
+              "status": "healthy",
+              "active_trades": 0,
+              "recent_decisions": 0,
+              "last_check": "2025-08-06T03:18:30.960148+00:00"
+            },
+            "ai_agents": {
+              "status": "warning",
+              "recent_decisions": 0,
+              "total_decisions_today": 0,
+              "last_decision": null,
+              "last_check": "2025-08-06T03:18:31.061000+00:00"
+            },
+            "system_resources": {
+              "status": "healthy",
+              "cpu_percent": 12.2,
+              "memory_percent": 71.5,
+              "memory_available": 7349436416,
+              "disk_percent": 5.5,
+              "disk_free": 192863313920,
+              "last_check": "2025-08-06T03:18:32.066558+00:00"
+            }
+          },
+          "last_check": "2025-08-06T03:29:16.459929+00:00",
+          "uptime": 84318.793289,
+          "error": "'uptime_start'"
+        },
+        "active_trades_count": 0,
+        "recent_decisions_count": 0,
+        "timestamp": "2025-08-06T03:29:16.461466+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/control/status",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 383,
+      "response": {
+        "control_state": {
+          "auto_trading": false,
+          "paper_trading": false,
+          "ai_analysis": true,
+          "data_feed": true,
+          "risk_management": true,
+          "trading_engine": true
+        },
+        "system_health": {
+          "trading_engine": true,
+          "ai_analysis": true,
+          "risk_management": true,
+          "data_feed": true
+        },
+        "account_status": {
+          "buying_power": 200000.0,
+          "portfolio_value": 100000.0,
+          "trading_blocked": false
+        },
+        "timestamp": "2025-08-06T03:29:16.586117+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/config/status",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 221,
+      "response": {
+        "database_connected": true,
+        "trading_service_active": true,
+        "environment": "production",
+        "paper_trading": true,
+        "api_keys_configured": {
+          "alpaca": true,
+          "telegram": true,
+          "mongodb": true
+        },
+        "timestamp": "2025-08-06T03:29:16.694532+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/signals/recent",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 140,
+      "response": {
+        "detail": "AI signals service not implemented. Requires trained ML models, technical analysis engines, and real signal generation systems."
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/market/realtime/AAPL",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 142,
+      "response": {
+        "detail": "Real-time market data service not implemented. Requires integration with market data providers (Polygon, Alpaca, Bloomberg, etc.)"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/dashboard/analytics/performance",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 149,
+      "response": {
+        "detail": "Performance analytics service not implemented. Requires historical data analysis, risk calculations, and performance attribution models."
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/dashboard/market/pulse",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 137,
+      "response": {
+        "detail": "Market pulse service not implemented. Requires real-time market data feeds, sentiment analysis, and market regime detection."
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/dashboard/watchlist/signals",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 144,
+      "response": {
+        "detail": "AI watchlist signals service not implemented. Requires machine learning models, technical analysis engines, and sentiment analysis."
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/dashboard/ai/signals",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 51,
+      "response": {
+        "detail": "AI signals service not yet implemented"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/dashboard/ai/learning-metrics",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 60,
+      "response": {
+        "detail": "AI learning metrics service not yet implemented"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/config/system",
+      "status_code": 501,
+      "expected_status": 501,
+      "success": true,
+      "response_size": 61,
+      "response": {
+        "detail": "System configuration service not yet implemented"
+      }
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/training-data/AAPL",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/market-sentiment/AAPL",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": []
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/pattern-analysis",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": {}
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/strategy-performance",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": {}
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/ai/market-regime",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 2,
+      "response": []
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/ai/force-data-collection",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 80,
+      "response": {
+        "status": "collection_completed",
+        "timestamp": "2025-08-06T03:29:18.228065+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/system/trigger_scan",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 115,
+      "response": {
+        "status": "scan_triggered",
+        "message": "Market scan started manually",
+        "timestamp": "2025-08-06T03:29:18.338203+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/dashboard/config/update",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 163,
+      "response": {
+        "status": "success",
+        "updated_config": {
+          "setting": "test",
+          "value": true
+        },
+        "timestamp": "2025-08-06T03:29:18.444051+00:00",
+        "message": "Configuration updated successfully"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/control/toggle_auto_trading",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 118,
+      "response": {
+        "status": "success",
+        "message": "Auto trading enabled",
+        "new_status": true,
+        "timestamp": "2025-08-06T03:29:18.552155+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/control/toggle_paper_trading",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 119,
+      "response": {
+        "status": "success",
+        "message": "Paper trading enabled",
+        "new_status": true,
+        "timestamp": "2025-08-06T03:29:18.658747+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/control/sync_data",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_size": 246,
+      "response": {
+        "status": "success",
+        "message": "Data synchronization completed successfully",
+        "sync_results": {
+          "account_synced": true,
+          "positions_count": 0,
+          "orders_count": 0,
+          "last_sync": "2025-08-06T03:29:18.816590+00:00"
+        },
+        "timestamp": "2025-08-06T03:29:18.816607+00:00"
+      }
+    },
+    {
+      "method": "WEBSOCKET",
+      "endpoint": "/ws/health",
+      "status_code": 101,
+      "expected_status": 101,
+      "success": true,
+      "response": {
+        "message": "WebSocket connection successful",
+        "data": "{\"type\": \"initial_health\", \"data\": {\"overall\": \"unhealthy\", \"components\": {\"trading_api\": {\"status\":"
+      }
+    },
+    {
+      "method": "WEBSOCKET",
+      "endpoint": "/ws/trades",
+      "status_code": 101,
+      "expected_status": 101,
+      "success": true,
+      "response": {
+        "message": "WebSocket connection successful",
+        "data": "{\"type\": \"initial_trades\", \"data\": []}"
+      }
+    }
+  ]
+}

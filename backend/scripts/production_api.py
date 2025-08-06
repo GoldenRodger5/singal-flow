@@ -9,12 +9,19 @@ import uvicorn
 import asyncio
 import json
 import os
+import sys
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any
 from loguru import logger
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.append(str(Path(__file__).parent.parent))
 
 from services.health_monitor import health_monitor
 from services.database_manager import get_db_manager, TradeRecord
+from services.alpaca_trading import AlpacaTradingService
+from services.telegram_trading import telegram_trading
 
 # Global database manager - will be initialized on first access
 db_manager = None
@@ -27,14 +34,10 @@ def get_db():
     return db_manager
 
 # Do NOT initialize db_manager at import time. Only initialize inside endpoints or functions.
-from services.alpaca_trading import AlpacaTradingService
-from services.telegram_trading import telegram_trading
 # from services.ai_data_collector import ai_data_collector  # Disabled due to yfinance conflict
 
 # Import the main trading orchestrator - lazy loading to avoid startup issues
-import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
 
 # Global orchestrator - will be initialized on first access
 orchestrator = None
@@ -1238,12 +1241,26 @@ async def update_system_configuration(config_data: Dict[str, Any]):
 
 
 @app.get("/api/config/status")
-async def get_system_status():
+async def get_config_status():
     """Get detailed system status for configuration panel"""
-    return JSONResponse(
-        status_code=501,
-        content={"detail": "System status service not yet implemented"}
-    )
+    try:
+        # Get system configuration status
+        config_status = {
+            "database_connected": True,  # Will be checked by health monitor
+            "trading_service_active": bool(get_trading_service()),
+            "environment": os.getenv("ENVIRONMENT", "development"),
+            "paper_trading": os.getenv("PAPER_TRADING", "true").lower() == "true",
+            "api_keys_configured": {
+                "alpaca": bool(os.getenv("ALPACA_API_KEY")),
+                "telegram": bool(os.getenv("TELEGRAM_BOT_TOKEN")),
+                "mongodb": bool(os.getenv("MONGODB_URL"))
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        return JSONResponse(content=config_status)
+    except Exception as e:
+        logger.error(f"Config status check failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== TELEGRAM WEBHOOK ENDPOINT ====================

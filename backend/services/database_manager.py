@@ -655,6 +655,66 @@ class DatabaseManager:
             logger.error(f"Failed to get learning summary: {e}")
             return {}
 
+    async def get_recent_trades(self, limit: int = 100) -> List[Dict]:
+        """Get recent trades for performance calculations"""
+        try:
+            cursor = self.async_db.trades.find(
+                {},
+                sort=[('timestamp', -1)],
+                limit=limit
+            )
+            return await cursor.to_list(length=limit)
+        except Exception as e:
+            logger.error(f"Failed to get recent trades: {e}")
+            return []
+
+    async def get_learning_summary(self) -> Dict:
+        """Get AI learning summary with basic metrics"""
+        try:
+            # Get trade count and performance
+            trade_count = await self.async_db.trades.count_documents({})
+            decision_count = await self.async_db.ai_decisions.count_documents({})
+            
+            # Calculate basic metrics
+            pipeline = [
+                {'$group': {
+                    '_id': None,
+                    'total_pnl': {'$sum': {'$ifNull': ['$profit_loss', 0]}},
+                    'winning_trades': {
+                        '$sum': {'$cond': [{'$gt': ['$profit_loss', 0]}, 1, 0]}
+                    },
+                    'avg_confidence': {'$avg': '$confidence'}
+                }}
+            ]
+            
+            trade_stats = await self.async_db.trades.aggregate(pipeline).to_list(length=1)
+            stats = trade_stats[0] if trade_stats else {}
+            
+            return {
+                'total_trades': trade_count,
+                'total_decisions': decision_count,
+                'total_pnl': stats.get('total_pnl', 0),
+                'winning_trades': stats.get('winning_trades', 0),
+                'win_rate': (stats.get('winning_trades', 0) / max(trade_count, 1)) * 100,
+                'avg_confidence': stats.get('avg_confidence', 0),
+                'models_trained': 0,  # Placeholder for future ML implementation
+                'total_predictions': decision_count,
+                'last_updated': datetime.now(timezone.utc).isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Failed to get learning summary: {e}")
+            return {
+                'total_trades': 0,
+                'total_decisions': 0,
+                'total_pnl': 0,
+                'winning_trades': 0,
+                'win_rate': 0,
+                'avg_confidence': 0,
+                'models_trained': 0,
+                'total_predictions': 0,
+                'last_updated': datetime.now(timezone.utc).isoformat()
+            }
+
 
 # Global database instance - lazy initialization
 _db_manager = None
