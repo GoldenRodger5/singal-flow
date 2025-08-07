@@ -291,8 +291,8 @@ class ExecutionMonitorAgent:
             
             else:
                 # Notification-only mode: Just alert user
-                from services.twilio_whatsapp import WhatsAppNotifier
-                notifier = WhatsAppNotifier()
+                from services.telegram_notifier import TelegramNotifier
+                notifier = TelegramNotifier()
                 
                 await notifier.send_message(
                     f"🚨 EXIT SIGNAL - {ticker}\n"

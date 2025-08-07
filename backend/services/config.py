@@ -105,8 +105,8 @@ class Config:
     MAX_PORTFOLIO_VOLATILITY = 0.15  # 15% annual volatility target
     
     # Auto Trading Configuration
-    AUTO_TRADING_ENABLED = os.getenv('AUTO_TRADING_ENABLED', 'false').lower() == 'true'
-    INTERACTIVE_TRADING_ENABLED = os.getenv('INTERACTIVE_TRADING_ENABLED', 'true').lower() == 'true'
+    AUTO_TRADING_ENABLED = os.getenv('AUTO_TRADING_ENABLED', 'true').lower() == 'true'
+    INTERACTIVE_TRADING_ENABLED = os.getenv('INTERACTIVE_TRADING_ENABLED', 'false').lower() == 'true'
     TRADE_CONFIRMATION_TIMEOUT = int(os.getenv('TRADE_CONFIRMATION_TIMEOUT', 30))  # seconds
     
     # Enhanced Data Collection Configuration

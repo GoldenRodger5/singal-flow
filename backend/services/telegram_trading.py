@@ -5,6 +5,7 @@ Connects FastAPI webhook system with main trading application
 """
 import asyncio
 import json
+import aiohttp
 from typing import Dict, Any, Optional
 from datetime import datetime
 from loguru import logger
@@ -23,6 +24,7 @@ class TelegramTradingService:
         self.alpaca = AlpacaTradingService()
         # Note: Interactive trading removed to avoid circular imports
         self.interactive_trading = None
+        self.http_session = None
         
         # Store pending trade recommendations for execution
         self.pending_trades: Dict[str, Dict[str, Any]] = {}
@@ -290,12 +292,35 @@ class TelegramTradingService:
             return {"status": "error", "message": str(e)}
 
     async def send_message(self, message: str) -> bool:
-        """Send message via Telegram bot."""
+        """Send message via Telegram bot using real API."""
+        import os
+        
         try:
-            # In a real implementation, this would use the Telegram Bot API
-            # For now, just log the message
-            logger.info(f"Telegram message: {message}")
-            return True
+            bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+            chat_id = os.getenv('TELEGRAM_CHAT_ID')
+            
+            if not bot_token or not chat_id:
+                logger.error("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured")
+                return False
+            
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            
+            if not self.http_session:
+                self.http_session = aiohttp.ClientSession()
+            
+            async with self.http_session.post(url, json={
+                "chat_id": chat_id,
+                "text": message,
+                "parse_mode": "Markdown"
+            }) as response:
+                if response.status == 200:
+                    logger.info(f"Telegram message sent successfully")
+                    return True
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Telegram API error: {response.status} - {error_text}")
+                    return False
+                        
         except Exception as e:
             logger.error(f"Failed to send Telegram message: {e}")
             return False
@@ -311,19 +336,5 @@ def get_telegram_trading():
         _telegram_trading = TelegramTradingService()
     return _telegram_trading
 
-# Create module-level instance that can be imported
-telegram_trading = None
-
-def _init_telegram_trading():
-    global telegram_trading
-    if telegram_trading is None:
-        telegram_trading = TelegramTradingService()
-    return telegram_trading
-
-# Initialize only when accessed
-class LazyTelegramTrading:
-    def __getattr__(self, name):
-        service = _init_telegram_trading()
-        return getattr(service, name)
-
-telegram_trading = LazyTelegramTrading()
+# Create a direct instance instead of lazy loading to avoid recursion
+telegram_trading = TelegramTradingService()

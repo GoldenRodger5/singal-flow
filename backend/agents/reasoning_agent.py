@@ -31,11 +31,14 @@ class ReasoningAgent:
         self.anthropic_client = None
         
         # Initialize AI clients
-        if OPENAI_AVAILABLE and self.config.OPENAI_API_KEY:
+        if self.config.OPENAI_API_KEY:
             self.openai_client = openai.OpenAI(api_key=self.config.OPENAI_API_KEY)
-        
-        if ANTHROPIC_AVAILABLE and self.config.CLAUDE_API_KEY:
-            self.anthropic_client = anthropic.Anthropic(api_key=self.config.CLAUDE_API_KEY)
+        if self.config.CLAUDE_API_KEY:
+            try:
+                self.anthropic_client = anthropic.Anthropic(api_key=self.config.CLAUDE_API_KEY)
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic client: {e}")
+                self.anthropic_client = None
     
     async def explain_trade(self, setup: Dict[str, Any], sentiment: Dict[str, Any], 
                            recommendation: Dict[str, Any]) -> Dict[str, Any]:

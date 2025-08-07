@@ -101,9 +101,13 @@ class LLMRouter:
         )
         
         # Initialize Anthropic client
-        self.anthropic_client = anthropic.Anthropic(
-            api_key=os.getenv('ANTHROPIC_API_KEY')
-        )
+        try:
+            self.anthropic_client = anthropic.Anthropic(
+                api_key=os.getenv('ANTHROPIC_API_KEY')
+            )
+        except Exception as e:
+            logger.warning(f"Failed to initialize Anthropic client in LLMRouter: {e}")
+            self.anthropic_client = None
         
         # Usage tracking
         self.usage_stats = {}

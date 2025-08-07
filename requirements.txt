@@ -61,3 +61,8 @@ ipython>=8.0.0
 jupyter>=1.0.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
+
+# Production reliability packages (optional but recommended)
+praw>=7.7.0  # Reddit API for sentiment analysis (graceful degradation if not available)
+textblob>=0.17.1  # Text processing for sentiment analysis (graceful degradation)
+tweepy>=4.14.0  # Twitter API (graceful degradation if not available)

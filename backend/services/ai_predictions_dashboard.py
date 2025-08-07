@@ -1,37 +1,51 @@
 """
-AI Price Predictions Dashboard - Real-time ML predictions
+AI Price Predictions Service - Real-time ML predictions for API
 """
 
-import streamlit as st
 import logging
 from datetime import datetime, timedelta
-import pandas as pd
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-def show_ai_predictions():
-    """Display AI price predictions and confidence scores."""
-    st.markdown("## 🤖 AI Price Predictions")
+class AIPredictionsService:
+    """Service for getting AI predictions data for frontend API."""
     
-    try:
-        # Get predictions from AI learning engine
-        predictions = get_ai_predictions()
-        
-        if predictions:
-            # Show prediction summary
-            show_prediction_summary(predictions)
+    def __init__(self):
+        """Initialize AI predictions service."""
+        pass
+    
+    def get_predictions_dashboard_data(self) -> Dict[str, Any]:
+        """Get complete predictions data for dashboard."""
+        try:
+            # Get predictions from AI learning engine
+            predictions = self.get_ai_predictions()
             
-            # Show detailed predictions
-            show_detailed_predictions(predictions)
-            
-            # Show model performance metrics
-            show_model_performance()
-        else:
-            st.info("🔮 AI predictions loading... Check back in a few minutes!")
-            
-    except Exception as e:
-        logger.error(f"Error displaying AI predictions: {e}")
-        st.error(f"Error loading AI predictions: {e}")
+            if predictions:
+                return {
+                    'success': True,
+                    'predictions': predictions,
+                    'summary': self.get_prediction_summary(predictions),
+                    'performance': self.get_model_performance_data(),
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                return {
+                    'success': True,
+                    'predictions': [],
+                    'summary': {},
+                    'performance': {},
+                    'message': "AI predictions loading... Check back in a few minutes!",
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting AI predictions dashboard data: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
 
 
 def get_ai_predictions():
@@ -203,58 +217,119 @@ def show_model_performance():
 
 
 def get_sample_predictions():
-    """Generate sample predictions for TESTING ONLY."""
-    logger.warning("🧪 USING SAMPLE PREDICTIONS - FOR TESTING ONLY")
-    sample_predictions = [
-        {
-            'symbol': 'AAPL',
-            'confidence': 8.5,
-            'direction': 'bullish',
-            'target_price': 165.50,
-            'current_price': 152.00,
-            'timeframe': '1h',
-            'reasoning': 'Strong momentum with volume spike detected - explosive breakout potential',
-            'technical_score': 8.2,
-            'momentum_score': 9.1,
-            'volume_score': 8.8
-        },
-        {
-            'symbol': 'MSFT',
-            'confidence': 7.2,
-            'direction': 'bearish',
-            'target_price': 275.00,
-            'current_price': 298.50,
-            'timeframe': '30m',
-            'reasoning': 'Overbought conditions with divergence - major correction expected',
-            'technical_score': 6.8,
-            'momentum_score': 7.5,
-            'volume_score': 7.3
-        },
-        {
-            'symbol': 'GOOGL',
-            'confidence': 9.1,
-            'direction': 'bullish',
-            'target_price': 2720.00,
-            'current_price': 2550.00,
-            'timeframe': '15m',
-            'reasoning': 'Breakout pattern with high volume confirmation - explosive move incoming',
-            'technical_score': 9.3,
-            'momentum_score': 8.9,
-            'volume_score': 9.5
-        }
-    ]
-    return sample_predictions
+    """Get real predictions from AI learning engine - NO SAMPLE DATA."""
+    try:
+        from services.ai_learning_engine import AILearningEngine
+        
+        logger.info("🤖 Getting REAL predictions from AI learning engine")
+        
+        # Get real predictions from the learning engine
+        learning_engine = AILearningEngine()
+        real_predictions = learning_engine.get_recent_predictions()
+        
+        if not real_predictions:
+            logger.warning("No real predictions available yet")
+            return []
+        
+        # Convert to dashboard format
+        formatted_predictions = []
+        for pred in real_predictions:
+            formatted_predictions.append({
+                'symbol': pred.ticker,
+                'confidence': pred.confidence_score * 10,  # Convert to 1-10 scale
+                'direction': pred.predicted_direction,
+                'target_price': getattr(pred, 'target_price', 0),
+                'current_price': getattr(pred, 'current_price', 0),
+                'timeframe': f"{pred.predicted_timeframe_hours:.0f}h",
+                'reasoning': ' | '.join(pred.reasoning_factors[:2]),  # First 2 reasons
+                'technical_score': pred.technical_signals.get('overall_score', 0) * 10,
+                'momentum_score': pred.technical_signals.get('momentum_score', 0) * 10,
+                'volume_score': pred.technical_signals.get('volume_score', 0) * 10
+            })
+        
+        return formatted_predictions
+        
+    except Exception as e:
+        logger.error(f"Error getting real predictions: {e}")
+        # Return empty list instead of sample data in production
+        return []
 
 
 def get_model_performance_data():
-    """Get model performance metrics."""
-    return {
-        'accuracy': 76.5,
-        'precision': 78.2,
-        'total_predictions': 142,
-        'correct_predictions': 109,
-        'training_samples': 15847,
-        'model_version': 'v2.1',
-        'last_update': datetime.now().strftime('%Y-%m-%d %H:%M'),
-        'learning_progress': 83.2
-    }
+    """Get REAL model performance metrics from AI learning engine."""
+    try:
+        from services.ai_learning_engine import AILearningEngine
+        from services.database_manager import DatabaseManager
+        
+        logger.info("📊 Getting REAL model performance from database")
+        
+        # Get real performance from AI learning engine
+        ai_engine = AILearningEngine()
+        db = DatabaseManager()
+        
+        # Get recent predictions and outcomes
+        recent_predictions = ai_engine.get_recent_predictions(days=7)
+        recent_outcomes = ai_engine.get_recent_outcomes(days=7)
+        
+        if not recent_predictions:
+            logger.warning("No recent predictions for performance calculation")
+            return {
+                'accuracy': 0.0,
+                'precision': 0.0,
+                'total_predictions': 0,
+                'correct_predictions': 0,
+                'training_samples': 0,
+                'model_version': 'v1.0',
+                'last_update': 'No data yet',
+                'learning_progress': 0.0
+            }
+        
+        # Calculate real accuracy
+        matched_predictions = []
+        for pred in recent_predictions:
+            for outcome in recent_outcomes:
+                if (pred.ticker == outcome.ticker and 
+                    abs((pred.timestamp - outcome.timestamp).total_seconds()) < 3600):  # Within 1 hour
+                    matched_predictions.append((pred, outcome))
+                    break
+        
+        if matched_predictions:
+            correct = sum(1 for pred, outcome in matched_predictions 
+                         if pred.predicted_direction == ('up' if outcome.actual_move > 0 else 'down'))
+            accuracy = (correct / len(matched_predictions)) * 100
+            precision = accuracy  # Simplified for now
+        else:
+            accuracy = 0.0
+            precision = 0.0
+        
+        # Get training data count
+        all_outcomes = ai_engine.get_all_outcomes()
+        training_samples = len(all_outcomes)
+        
+        # Calculate learning progress (based on minimum samples needed)
+        min_samples_needed = 100
+        learning_progress = min(100, (training_samples / min_samples_needed) * 100)
+        
+        return {
+            'accuracy': accuracy,
+            'precision': precision,
+            'total_predictions': len(recent_predictions),
+            'correct_predictions': len(matched_predictions),
+            'training_samples': training_samples,
+            'model_version': 'v2.1',
+            'last_update': datetime.now().strftime('%Y-%m-%d %H:%M'),
+            'learning_progress': learning_progress
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting real model performance: {e}")
+        return {
+            'accuracy': 0.0,
+            'precision': 0.0,
+            'total_predictions': 0,
+            'correct_predictions': 0,
+            'training_samples': 0,
+            'model_version': 'v1.0',
+            'last_update': 'Error loading data',
+            'learning_progress': 0.0
+        }

@@ -91,7 +91,7 @@ class EnhancedTradeRecommender:
             
         except Exception as e:
             logger.error(f"Error generating enhanced recommendation for {ticker}: {e}")
-            return self._fallback_recommendation(ticker)
+            return self._error_recommendation(ticker, str(e))
     
     def _should_execute_trade(self, indicators: dict, regime_info: dict) -> bool:
         """
@@ -162,15 +162,15 @@ class EnhancedTradeRecommender:
         
         return min(base_priority, 10)
     
-    def _fallback_recommendation(self, ticker: str) -> dict:
-        """Generate safe fallback recommendation on error."""
+    def _error_recommendation(self, ticker: str, error_msg: str) -> dict:
+        """Generate error response - no fallback data in production."""
         return {
             'ticker': ticker,
-            'signal_type': 'neutral',
+            'signal_type': 'error',
             'confidence': 0,
             'should_trade': False,
             'error': True,
-            'message': 'Error generating recommendation - using fallback'
+            'message': f'Error generating recommendation: {error_msg}'
         }
     
     async def log_execution(self, signal_id: int, execution_details: dict) -> int:
@@ -241,7 +241,11 @@ class PaperTradingMonitor:
             return None
         
         ticker = recommendation['ticker']
-        current_price = recommendation.get('current_price', 100)  # Mock price
+        current_price = recommendation.get('current_price')
+        if not current_price:
+            logger.error(f"No current price available for {ticker} - cannot execute")
+            return None
+            
         position_size = recommendation.get('position_size', 0)
         
         # Simulate execution details
@@ -312,13 +316,20 @@ class PaperTradingMonitor:
         total_pnl = pnl_per_share * quantity
         pnl_percent = (pnl_per_share / entry_price) * 100
         
+        # Calculate actual hold duration
+        from datetime import datetime
+        entry_time = position.get('entry_time', datetime.now())
+        if isinstance(entry_time, str):
+            entry_time = datetime.fromisoformat(entry_time)
+        hold_duration_minutes = int((datetime.now() - entry_time).total_seconds() / 60)
+        
         exit_details = {
             'ticker': ticker,
             'exit_price': exit_price,
             'exit_reason': reason,
             'pnl_usd': total_pnl,
             'pnl_percent': pnl_percent,
-            'hold_duration_minutes': 60,  # Mock duration
+            'hold_duration_minutes': hold_duration_minutes,
             'market_regime_entry': position['market_regime'],
             'market_regime_exit': position['market_regime']  # Would be current regime
         }

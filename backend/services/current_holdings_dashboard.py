@@ -194,24 +194,55 @@ def show_recent_trades():
 
 
 def create_sample_holdings():
-    """DEPRECATED: Sample holdings for testing only.
-    
-    This function is preserved for test files but should NOT be used 
-    in production. Use real market data instead.
-    """
-    logger.warning("🧪 create_sample_holdings() called - THIS IS FOR TESTING ONLY")
-    sample_data = {
-        'symbol': ['AAPL', 'MSFT', 'GOOGL'],
-        'quantity': [100, 50, 25],
-        'avg_price': [150.00, 300.00, 2500.00],
-        'current_price': [155.00, 295.00, 2550.00],
-        'market_value': [15500.00, 14750.00, 63750.00],
-        'unrealized_pnl': [500.00, -250.00, 1250.00],
-        'unrealized_pnl_percent': [3.33, -1.67, 2.00],
-        'entry_date': ['2024-01-15', '2024-01-16', '2024-01-17'],
-        'entry_confidence': [8.5, 7.2, 9.1]
-    }
-    
-    df = pd.DataFrame(sample_data)
-    df.to_csv('data/current_holdings.csv', index=False)
-    return df
+    """DEPRECATED: Now gets real holdings from Alpaca API - NO SAMPLE DATA."""
+    try:
+        from services.alpaca_trading import AlpacaTradingService
+        
+        logger.info("📊 Getting REAL holdings from Alpaca API")
+        
+        alpaca = AlpacaTradingService()
+        
+        # Get real positions from Alpaca
+        positions = await alpaca.get_positions()
+        
+        if not positions:
+            logger.info("No current positions")
+            return pd.DataFrame()  # Return empty dataframe
+        
+        # Convert to dataframe format
+        holdings_data = {
+            'symbol': [],
+            'quantity': [],
+            'avg_price': [],
+            'current_price': [],
+            'market_value': [],
+            'unrealized_pnl': [],
+            'unrealized_pnl_percent': [],
+            'entry_date': [],
+            'entry_confidence': []
+        }
+        
+        for position in positions:
+            if float(position.get('qty', 0)) != 0:  # Only open positions
+                holdings_data['symbol'].append(position.get('symbol'))
+                holdings_data['quantity'].append(float(position.get('qty', 0)))
+                holdings_data['avg_price'].append(float(position.get('avg_cost', 0)))
+                holdings_data['current_price'].append(float(position.get('market_value', 0)) / float(position.get('qty', 1)))
+                holdings_data['market_value'].append(float(position.get('market_value', 0)))
+                holdings_data['unrealized_pnl'].append(float(position.get('unrealized_pl', 0)))
+                holdings_data['unrealized_pnl_percent'].append(float(position.get('unrealized_plpc', 0)) * 100)
+                holdings_data['entry_date'].append(position.get('updated_at', '')[:10])  # Date only
+                holdings_data['entry_confidence'].append(8.0)  # Default confidence
+        
+        df = pd.DataFrame(holdings_data)
+        
+        if not df.empty:
+            df.to_csv('data/current_holdings.csv', index=False)
+            logger.info(f"Real holdings data saved: {len(df)} positions")
+        
+        return df
+        
+    except Exception as e:
+        logger.error(f"Error getting real holdings: {e}")
+        # Return empty dataframe instead of sample data
+        return pd.DataFrame()

@@ -37,7 +37,11 @@ class SentimentAgent:
             self.openai_client = openai.OpenAI(api_key=self.config.OPENAI_API_KEY)
         
         if ANTHROPIC_AVAILABLE and self.config.CLAUDE_API_KEY:
-            self.anthropic_client = anthropic.Anthropic(api_key=self.config.CLAUDE_API_KEY)
+            try:
+                self.anthropic_client = anthropic.Anthropic(api_key=self.config.CLAUDE_API_KEY)
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic client: {e}")
+                self.anthropic_client = None
     
     async def analyze_ticker(self, ticker: str) -> Dict[str, Any]:
         """Analyze sentiment for a specific ticker."""

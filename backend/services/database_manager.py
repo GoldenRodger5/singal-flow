@@ -99,6 +99,11 @@ class DatabaseManager:
             self.db = self.client[self.db_name]
             self.async_db = self.async_client[self.db_name]
             
+            # Setup collection references for new services
+            self.ai_signals = self.async_db.ai_signals
+            self.market_pulse = self.async_db.market_pulse
+            self.system_config = self.async_db.system_config
+            
             # Test connection with retry logic for Railway/Atlas
             self._test_connection()
             self._setup_collections()
@@ -197,6 +202,22 @@ class DatabaseManager:
                 ('timestamp', -1),
                 ('symbol_pair', 1),
                 ('correlation_value', -1)
+            ],
+            # New collections for enhanced services
+            'ai_signals': [
+                ('symbol', 1),
+                ('timestamp', -1),
+                ('signal_type', 1),
+                ('confidence', -1)
+            ],
+            'market_pulse': [
+                ('timestamp', -1),
+                ('market_trend', 1),
+                ('volatility_index', -1)
+            ],
+            'system_config': [
+                ('_id', 1),
+                ('updated_at', -1)
             ],
             'volatility_data': [
                 ('symbol', 1),
@@ -714,6 +735,228 @@ class DatabaseManager:
                 'total_predictions': 0,
                 'last_updated': datetime.now(timezone.utc).isoformat()
             }
+    
+    # ==================== AI SIGNALS MANAGEMENT ====================
+    
+    async def store_ai_signals(self, signals_data: List[Dict[str, Any]]):
+        """Store AI signals to database for tracking."""
+        try:
+            if not signals_data:
+                return
+            
+            # Add metadata to each signal
+            for signal in signals_data:
+                signal['_id'] = f"{signal['symbol']}_{signal['timestamp'].strftime('%Y%m%d_%H%M%S')}"
+                signal['created_at'] = datetime.now(timezone.utc)
+            
+            result = await self.ai_signals.insert_many(signals_data)
+            logger.debug(f"Stored {len(result.inserted_ids)} AI signals")
+            
+        except Exception as e:
+            logger.error(f"Error storing AI signals: {e}")
+    
+    async def get_recent_signals(self, days: int = 7) -> List[Dict[str, Any]]:
+        """Get recent AI signals from database."""
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            
+            cursor = self.ai_signals.find({
+                'timestamp': {'$gte': cutoff_date}
+            }).sort('timestamp', -1)
+            
+            signals = await cursor.to_list(length=None)
+            logger.debug(f"Retrieved {len(signals)} recent signals")
+            return signals
+            
+        except Exception as e:
+            logger.error(f"Error getting recent signals: {e}")
+            return []
+    
+    async def update_signal_outcomes(self, updates: List[Dict[str, Any]]):
+        """Update signal outcomes with actual returns."""
+        try:
+            for update in updates:
+                signal_id = f"{update['symbol']}_{update['timestamp'].strftime('%Y%m%d_%H%M%S')}"
+                
+                await self.ai_signals.update_one(
+                    {'_id': signal_id},
+                    {'$set': {
+                        'actual_return': update['actual_return'],
+                        'current_price': update['current_price'],
+                        'last_updated': datetime.now(timezone.utc)
+                    }}
+                )
+            
+            logger.debug(f"Updated {len(updates)} signal outcomes")
+            
+        except Exception as e:
+            logger.error(f"Error updating signal outcomes: {e}")
+    
+    # ==================== MARKET PULSE DATA ====================
+    
+    async def store_market_pulse(self, pulse_data: Dict[str, Any]):
+        """Store market pulse data for historical tracking."""
+        try:
+            pulse_data['_id'] = pulse_data['timestamp'].strftime('%Y%m%d_%H%M')
+            pulse_data['created_at'] = datetime.now(timezone.utc)
+            
+            await self.market_pulse.replace_one(
+                {'_id': pulse_data['_id']},
+                pulse_data,
+                upsert=True
+            )
+            
+            logger.debug("Stored market pulse data")
+            
+        except Exception as e:
+            logger.error(f"Error storing market pulse: {e}")
+    
+    async def get_historical_market_pulse(self, days: int = 7) -> List[Dict[str, Any]]:
+        """Get historical market pulse data."""
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            
+            cursor = self.market_pulse.find({
+                'timestamp': {'$gte': cutoff_date}
+            }).sort('timestamp', -1)
+            
+            pulse_history = await cursor.to_list(length=None)
+            logger.debug(f"Retrieved {len(pulse_history)} market pulse records")
+            return pulse_history
+            
+        except Exception as e:
+            logger.error(f"Error getting historical market pulse: {e}")
+            return []
+    
+    # ==================== PERFORMANCE DATA ====================
+    
+    async def get_balance_history(self, days: int = 30) -> List[Dict[str, Any]]:
+        """Get account balance history for performance analysis."""
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            
+            # Get balance snapshots from trades and portfolio updates
+            cursor = self.trades.aggregate([
+                {'$match': {'timestamp': {'$gte': cutoff_date}}},
+                {'$group': {
+                    '_id': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$timestamp'}},
+                    'total_value': {'$last': '$portfolio_value'},
+                    'trades_count': {'$sum': 1},
+                    'date': {'$last': '$timestamp'}
+                }},
+                {'$sort': {'date': 1}}
+            ])
+            
+            balance_history = await cursor.to_list(length=None)
+            
+            # Fill in missing days with interpolated values
+            if balance_history:
+                filled_history = []
+                current_date = cutoff_date.date()
+                end_date = datetime.now(timezone.utc).date()
+                
+                i = 0
+                last_value = 10000.0  # Starting balance
+                
+                while current_date <= end_date:
+                    date_str = current_date.isoformat()
+                    
+                    # Check if we have data for this date
+                    if i < len(balance_history) and balance_history[i]['_id'] == date_str:
+                        last_value = balance_history[i]['total_value']
+                        filled_history.append({
+                            'date': date_str,
+                            'total_value': last_value,
+                            'trades_count': balance_history[i]['trades_count']
+                        })
+                        i += 1
+                    else:
+                        # Use last known value
+                        filled_history.append({
+                            'date': date_str,
+                            'total_value': last_value,
+                            'trades_count': 0
+                        })
+                    
+                    current_date += timedelta(days=1)
+                
+                return filled_history
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Error getting balance history: {e}")
+            return []
+    
+    async def get_trading_history(self, days: int = 30) -> List[Dict[str, Any]]:
+        """Get trading history for performance analysis."""
+        try:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+            
+            cursor = self.trades.find({
+                'timestamp': {'$gte': cutoff_date},
+                'status': 'executed'
+            }).sort('timestamp', -1)
+            
+            trades = await cursor.to_list(length=None)
+            logger.debug(f"Retrieved {len(trades)} trades from history")
+            return trades
+            
+        except Exception as e:
+            logger.error(f"Error getting trading history: {e}")
+            return []
+    
+    async def get_symbol_trading_history(self, symbol: str) -> List[Dict[str, Any]]:
+        """Get trading history for a specific symbol."""
+        try:
+            cursor = self.trades.find({
+                'symbol': symbol,
+                'status': 'executed'
+            }).sort('timestamp', -1)
+            
+            trades = await cursor.to_list(length=None)
+            logger.debug(f"Retrieved {len(trades)} trades for {symbol}")
+            return trades
+            
+        except Exception as e:
+            logger.error(f"Error getting symbol trading history: {e}")
+            return []
+    
+    # ==================== SYSTEM CONFIGURATION ====================
+    
+    async def update_system_config(self, config_section: str, config_data: Dict[str, Any]):
+        """Update system configuration in database."""
+        try:
+            config_doc = {
+                '_id': config_section,
+                'config': config_data,
+                'updated_at': datetime.now(timezone.utc)
+            }
+            
+            await self.system_config.replace_one(
+                {'_id': config_section},
+                config_doc,
+                upsert=True
+            )
+            
+            logger.debug(f"Updated system config section: {config_section}")
+            
+        except Exception as e:
+            logger.error(f"Error updating system config: {e}")
+    
+    async def get_system_config(self, config_section: str) -> Dict[str, Any]:
+        """Get system configuration from database."""
+        try:
+            config_doc = await self.system_config.find_one({'_id': config_section})
+            
+            if config_doc:
+                return config_doc.get('config', {})
+            
+            return {}
+            
+        except Exception as e:
+            logger.error(f"Error getting system config: {e}")
+            return {}
 
 
 # Global database instance - lazy initialization
