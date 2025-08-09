@@ -45,7 +45,7 @@ class Config:
     PAPER_TRADING = os.getenv('PAPER_TRADING', 'true').lower() == 'true'
     
     # Database Configuration (MongoDB Atlas)
-    MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb+srv://username:password@cluster.mongodb.net/')
+    MONGODB_URL = os.getenv('MONGODB_URL')  # No default - must be explicitly set
     MONGODB_NAME = os.getenv('MONGODB_NAME', 'signal_flow_trading')
     MONGODB_CONNECTION_TIMEOUT = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 30000))  # 30 seconds for Railway
     MONGODB_SERVER_TIMEOUT = int(os.getenv('MONGODB_SERVER_TIMEOUT', 30000))  # 30 seconds for Railway

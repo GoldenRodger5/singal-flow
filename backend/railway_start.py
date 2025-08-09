@@ -108,42 +108,99 @@ async def debug_mongodb_connection():
     except Exception as e:
         return {"error": f"Debug endpoint failed: {str(e)}"}
 
+@app.get("/debug/env")
+async def debug_environment_variables():
+    """Debug all environment variables for Railway deployment."""
+    try:
+        import os
+        
+        # Get all Railway-specific environment variables
+        env_debug = {
+            "railway_vars": {
+                "RAILWAY_ENVIRONMENT": os.getenv('RAILWAY_ENVIRONMENT', 'Not Set'),
+                "RAILWAY_PROJECT_ID": os.getenv('RAILWAY_PROJECT_ID', 'Not Set'),
+                "RAILWAY_SERVICE_NAME": os.getenv('RAILWAY_SERVICE_NAME', 'Not Set'),
+                "PORT": os.getenv('PORT', 'Not Set')
+            },
+            "database_vars": {
+                "MONGODB_URL_exists": bool(os.getenv('MONGODB_URL')),
+                "MONGODB_URL_length": len(os.getenv('MONGODB_URL', '')),
+                "MONGODB_NAME": os.getenv('MONGODB_NAME', 'Not Set')
+            },
+            "trading_vars": {
+                "ALPACA_API_KEY_exists": bool(os.getenv('ALPACA_API_KEY')),
+                "ALPACA_SECRET_exists": bool(os.getenv('ALPACA_SECRET')),
+                "ALPACA_BASE_URL": os.getenv('ALPACA_BASE_URL', 'Not Set'),
+                "PAPER_TRADING": os.getenv('PAPER_TRADING', 'Not Set')
+            },
+            "notification_vars": {
+                "TELEGRAM_BOT_TOKEN_exists": bool(os.getenv('TELEGRAM_BOT_TOKEN')),
+                "TELEGRAM_CHAT_ID_exists": bool(os.getenv('TELEGRAM_CHAT_ID'))
+            },
+            "system_info": {
+                "python_path": os.getenv('PATH', 'Not Set')[:100] + "...",
+                "working_directory": os.getcwd(),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+        return env_debug
+        
+    except Exception as e:
+        return {"error": f"Environment debug failed: {str(e)}"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Railway."""
     try:
-        # Get environment info for debugging
+        # Get environment info for debugging - Railway specific check
         import os
-        mongodb_url_exists = bool(os.getenv('MONGODB_URL'))
-        mongodb_url_length = len(os.getenv('MONGODB_URL', ''))
+        mongodb_url_raw = os.getenv('MONGODB_URL')
+        mongodb_url_exists = bool(mongodb_url_raw)
+        mongodb_url_length = len(mongodb_url_raw) if mongodb_url_raw else 0
         
         # Test MongoDB connection with detailed error reporting
         mongodb_status = "unknown"
         mongodb_error = None
         connection_details = {
             "env_var_exists": mongodb_url_exists,
-            "env_var_length": mongodb_url_length
+            "env_var_length": mongodb_url_length,
+            "raw_env_preview": mongodb_url_raw[:50] + "..." if mongodb_url_raw and len(mongodb_url_raw) > 50 else mongodb_url_raw,
+            "railway_environment": os.getenv('RAILWAY_ENVIRONMENT', 'not_set'),
+            "environment": os.getenv('ENVIRONMENT', 'not_set')
         }
         
         try:
-            from services.config import Config
-            config = Config()
-            
-            connection_details.update({
-                "config_url_exists": bool(config.MONGODB_URL),
-                "config_url_length": len(config.MONGODB_URL) if config.MONGODB_URL else 0,
-                "config_db_name": config.MONGODB_NAME
-            })
-            
-            if config.MONGODB_URL:
+            # Try direct MongoDB connection first (bypassing Config class)
+            if mongodb_url_raw and mongodb_url_raw != 'mongodb+srv://username:password@cluster.mongodb.net/':
                 from pymongo import MongoClient
-                client = MongoClient(config.MONGODB_URL, serverSelectionTimeoutMS=3000)
+                client = MongoClient(mongodb_url_raw, serverSelectionTimeoutMS=5000)
                 client.admin.command('ping')
                 mongodb_status = "connected"
+                connection_details["connection_method"] = "direct_env_var"
                 client.close()
             else:
-                mongodb_status = "no_url"
-                mongodb_error = "MONGODB_URL not configured in Config"
+                # Try Config class as fallback
+                from services.config import Config
+                config = Config()
+                
+                connection_details.update({
+                    "config_url_exists": bool(config.MONGODB_URL),
+                    "config_url_length": len(config.MONGODB_URL) if config.MONGODB_URL else 0,
+                    "config_db_name": config.MONGODB_NAME,
+                    "config_url_preview": config.MONGODB_URL[:50] + "..." if config.MONGODB_URL and len(config.MONGODB_URL) > 50 else config.MONGODB_URL
+                })
+                
+                if config.MONGODB_URL and config.MONGODB_URL != 'mongodb+srv://username:password@cluster.mongodb.net/':
+                    from pymongo import MongoClient
+                    client = MongoClient(config.MONGODB_URL, serverSelectionTimeoutMS=5000)
+                    client.admin.command('ping')
+                    mongodb_status = "connected"
+                    connection_details["connection_method"] = "config_class"
+                    client.close()
+                else:
+                    mongodb_status = "no_url"
+                    mongodb_error = "MONGODB_URL environment variable not properly configured"
                 
         except Exception as e:
             mongodb_status = "failed"
@@ -407,19 +464,33 @@ async def get_active_trades():
 async def get_recent_ai_decisions():
     """Get recent AI trading decisions."""
     try:
-        from services.database_manager import get_db_manager
+        import os
         
-        db_manager = get_db_manager()
+        # Try direct MongoDB connection first for Railway
+        mongodb_url = os.getenv('MONGODB_URL')
+        if not mongodb_url or mongodb_url == 'mongodb+srv://username:password@cluster.mongodb.net/':
+            logger.warning("MongoDB URL not properly configured, returning empty decisions")
+            return {
+                "decisions": [],
+                "count": 0,
+                "last_updated": datetime.now().isoformat(),
+                "error": "MongoDB not configured"
+            }
         
         # Get recent AI decisions from MongoDB
         recent_decisions = []
         try:
-            cursor = db_manager.db.ai_decisions.find().sort("timestamp", -1).limit(50)
+            from pymongo import MongoClient
+            client = MongoClient(mongodb_url, serverSelectionTimeoutMS=5000)
+            db = client.signal_flow_trading
+            
+            cursor = db.ai_decisions.find().sort("timestamp", -1).limit(50)
             for decision in cursor:
                 decision["_id"] = str(decision["_id"])  # Convert ObjectId to string
                 if "timestamp" in decision and hasattr(decision["timestamp"], "isoformat"):
                     decision["timestamp"] = decision["timestamp"].isoformat()
                 recent_decisions.append(decision)
+            client.close()
         except Exception as db_error:
             logger.warning(f"MongoDB query failed: {db_error}")
         
