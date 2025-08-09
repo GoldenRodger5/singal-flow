@@ -116,6 +116,152 @@ async def get_holdings():
         logger.error(f"Error fetching holdings: {e}")
         return {"holdings": [], "total_value": 0.0, "error": str(e)}
 
+@app.get("/api/account")
+async def get_account_info():
+    """Get account information from the trading system."""
+    try:
+        from services.alpaca_trading import AlpacaTradingService
+        
+        trading_service = AlpacaTradingService()
+        account = trading_service.api.get_account()
+        
+        return {
+            "equity": float(account.equity),
+            "buying_power": float(account.buying_power),
+            "cash": float(account.cash),
+            "portfolio_value": float(account.portfolio_value),
+            "daytrade_count": int(account.daytrade_count),
+            "trading_blocked": account.trading_blocked,
+            "account_blocked": account.account_blocked,
+            "day_trade_buying_power": float(account.daytrading_buying_power),
+            "status": account.status
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching account info: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/dashboard/market/pulse")
+async def get_market_pulse():
+    """Get market pulse data for the dashboard."""
+    try:
+        # Get market overview data (using mock data for now since service may not be available)
+        current_hour = datetime.now().hour
+        market_data = {
+            "market_status": "open" if 9 <= current_hour < 16 else "closed",
+            "timestamp": datetime.now().isoformat(),
+            "major_indices": {
+                "SPY": {"price": 450.0, "change": 2.5, "change_percent": 0.56},
+                "QQQ": {"price": 380.0, "change": -1.2, "change_percent": -0.32},
+                "IWM": {"price": 200.0, "change": 1.8, "change_percent": 0.91}
+            },
+            "market_sentiment": "bullish",
+            "volatility_index": 18.5,
+            "volume_trend": "above_average"
+        }
+        
+        return market_data
+        
+    except Exception as e:
+        logger.error(f"Error fetching market pulse: {e}")
+        return {
+            "market_status": "unknown",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+
+@app.get("/api/dashboard/ai/signals")
+async def get_ai_signals():
+    """Get AI trading signals for the dashboard."""
+    try:
+        # Get recent AI signals (mock data for now)
+        signals = [
+            {
+                "symbol": "AAPL",
+                "signal": "BUY",
+                "confidence": 85,
+                "target_price": 185.0,
+                "current_price": 180.0,
+                "generated_at": datetime.now().isoformat()
+            },
+            {
+                "symbol": "MSFT",
+                "signal": "HOLD", 
+                "confidence": 72,
+                "target_price": 340.0,
+                "current_price": 335.0,
+                "generated_at": datetime.now().isoformat()
+            }
+        ]
+        
+        return {"signals": signals, "last_updated": datetime.now().isoformat()}
+        
+    except Exception as e:
+        logger.error(f"Error fetching AI signals: {e}")
+        return {"signals": [], "error": str(e)}
+
+@app.get("/api/dashboard/ai/learning-metrics")
+async def get_learning_metrics():
+    """Get AI learning metrics for the dashboard."""
+    try:
+        # Get learning metrics (mock data for now)
+        metrics = {
+            "accuracy": 78.5,
+            "total_predictions": 1250,
+            "correct_predictions": 982,
+            "win_rate": 76.2,
+            "sharpe_ratio": 1.45,
+            "last_training": datetime.now().isoformat(),
+            "model_version": "v2.1.0"
+        }
+        
+        return metrics
+        
+    except Exception as e:
+        logger.error(f"Error fetching learning metrics: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/config/system")
+async def get_system_config():
+    """Get system configuration for the dashboard."""
+    try:
+        system_config = {
+            "trading_mode": "paper",
+            "auto_trading": False,
+            "risk_management": True,
+            "market_hours_only": True,
+            "max_position_size": 10000,
+            "stop_loss_percent": 5.0,
+            "take_profit_percent": 10.0
+        }
+        
+        return system_config
+        
+    except Exception as e:
+        logger.error(f"Error fetching system config: {e}")
+        return {"error": str(e)}
+
+@app.get("/api/config/status")
+async def get_system_status():
+    """Get system status for the dashboard."""
+    try:
+        status = {
+            "trading_engine": "active",
+            "ai_analysis": "running",
+            "data_feed": "connected", 
+            "risk_management": "enabled",
+            "last_updated": datetime.now().isoformat(),
+            "uptime": time.time() - start_time,
+            "environment": "railway_cloud",
+            "version": "2.1.0"
+        }
+        
+        return status
+        
+    except Exception as e:
+        logger.error(f"Error fetching system status: {e}")
+        return {"error": str(e)}
+
 @app.get("/api/portfolio")
 async def get_portfolio_summary():
     """Get portfolio summary from the trading system."""

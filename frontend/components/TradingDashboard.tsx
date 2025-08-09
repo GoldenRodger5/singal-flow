@@ -74,7 +74,7 @@ export default function TradingDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState('holdings')
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'
 
   const fetchData = async () => {
     try {

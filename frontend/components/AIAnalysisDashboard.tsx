@@ -53,7 +53,7 @@ export default function AIAnalysisDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState('market-pulse')
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'
 
   const fetchData = async () => {
     try {

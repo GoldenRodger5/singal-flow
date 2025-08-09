@@ -74,7 +74,7 @@ export default function ConfigurationPanel() {
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('trading')
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://web-production-3e19d.up.railway.app'
 
   const fetchData = async () => {
     try {
