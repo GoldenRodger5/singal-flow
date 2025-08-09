@@ -577,16 +577,70 @@ class SignalFlowOrchestrator:
         """Start the trading system with AI learning."""
         logger.info("Starting Signal Flow Trading Assistant with AI Learning...")
         
+        # 🚨 CRITICAL: Check market hours before starting
+        try:
+            from utils.market_hours import market_hours
+            from datetime import datetime
+            
+            current_time = market_hours.get_current_est_time()
+            market_status = market_hours.get_market_status()
+            
+            logger.info(f"Current EST Time: {current_time.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            logger.info(f"Market Status: {market_status}")
+            
+            if market_status in ["WEEKEND", "MARKET_CLOSED"]:
+                # Send notification about why system is NOT starting
+                try:
+                    from services.telegram_trading import telegram_trading
+                    
+                    if market_status == "WEEKEND":
+                        next_open, _ = market_hours.get_next_market_session()
+                        await telegram_trading.send_message(
+                            "⏰ *TRADING SYSTEM - WEEKEND MODE*\n\n"
+                            f"📅 Current Time: {current_time.strftime('%A, %B %d at %I:%M %p EST')}\n"
+                            f"🚫 Status: Markets are CLOSED (Weekend)\n"
+                            f"📈 Next Market Session: {next_open.strftime('%A, %B %d at %I:%M %p EST')}\n\n"
+                            "✅ System will automatically start during market hours\n"
+                            "💤 No trading notifications until Monday 9:30 AM EST"
+                        )
+                    else:
+                        minutes_until = market_hours.time_until_market_open()
+                        if minutes_until:
+                            from utils.market_hours import format_time_until
+                            time_until_text = format_time_until(minutes_until)
+                            await telegram_trading.send_message(
+                                "⏰ *TRADING SYSTEM - AFTER HOURS*\n\n"
+                                f"📅 Current Time: {current_time.strftime('%I:%M %p EST')}\n"
+                                f"🚫 Status: Markets are CLOSED\n"
+                                f"📈 Market opens in: {time_until_text}\n\n"
+                                "✅ System will start during market hours (9:30 AM - 4:00 PM EST)\n"
+                                "💤 No trading activity until market open"
+                            )
+                except Exception as e:
+                    logger.warning(f"Failed to send market hours notification: {e}")
+                
+                logger.info("Trading system NOT started - outside market hours")
+                return
+            
+            elif market_status == "PRE_MARKET":
+                logger.info("PRE-MARKET: System will wait for market open")
+                # Continue but wait for market open
+                
+        except ImportError:
+            logger.warning("Market hours validation not available - starting anyway")
+        except Exception as e:
+            logger.error(f"Market hours check failed: {e} - starting anyway")
+        
         self.schedule_tasks()
         self.is_running = True
         
-        # Send startup notification
+        # Send startup notification (only if we reach here - market is open or pre-market)
         try:
             from services.telegram_trading import telegram_trading
             await telegram_trading.send_message(
                 "🚀 *TRADING SYSTEM STARTING*\n\n"
                 f"✅ System: Initializing\n"
-                f"⏰ Time: {datetime.now().strftime('%H:%M:%S EST')}\n"
+                f"⏰ Time: {current_time.strftime('%I:%M:%S %p EST')}\n"
                 f"📡 Mode: Paper Trading\n"
                 f"🎯 Market Scanning: Starting\n"
                 f"📊 Schedule: Every 1 minute\n\n"
