@@ -50,6 +50,144 @@ class TelegramNotifier:
             logger.error(f"Error sending trade alert: {e}")
             return False
     
+    async def send_buy_notification(self, symbol: str, quantity: int, price: float, order_id: str = None, 
+                                  predicted_target: float = None, confidence: float = None, 
+                                  stop_loss: float = None, reasoning: str = None) -> bool:
+        """Send a detailed buy order notification with price predictions via Telegram."""
+        try:
+            # Calculate predicted returns if target provided
+            predicted_return = ""
+            if predicted_target and price > 0:
+                return_pct = ((predicted_target - price) / price) * 100
+                predicted_return = f"\n🎯 **Predicted Target:** ${predicted_target:.2f} (+{return_pct:.1f}%)"
+                
+            # Add confidence rating
+            confidence_text = ""
+            if confidence:
+                confidence_stars = "⭐" * int(confidence * 10) if confidence <= 1 else "⭐" * int(confidence)
+                confidence_text = f"\n🤖 **AI Confidence:** {confidence:.1f}/10 {confidence_stars}"
+            
+            # Add stop loss info
+            risk_text = ""
+            if stop_loss and price > 0:
+                risk_pct = ((price - stop_loss) / price) * 100
+                risk_text = f"\n🛑 **Stop Loss:** ${stop_loss:.2f} (-{risk_pct:.1f}%)"
+            
+            # Add reasoning snippet
+            reasoning_text = ""
+            if reasoning:
+                reasoning_text = f"\n\n💡 **AI Analysis:**\n{reasoning[:120]}..."
+            
+            message = f"""
+🟢 **BUY ORDER EXECUTED** 🟢
+
+📈 **Symbol:** {symbol}
+📊 **Quantity:** {quantity:,} shares
+💰 **Entry Price:** ${price:.2f}
+💵 **Total Investment:** ${quantity * price:,.2f}{predicted_return}{confidence_text}{risk_text}
+🆔 **Order ID:** {order_id or 'N/A'}
+⏰ **Executed:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}{reasoning_text}
+
+📊 This is a PAPER TRADE (no real money involved)
+🤖 Executed by autonomous SignalFlow AI system
+            """.strip()
+            
+            success = await self._send_message(message)
+            if success:
+                logger.info(f"Enhanced buy notification sent for {symbol}: {quantity} shares @ ${price}")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending buy notification: {e}")
+            return False
+    
+    async def send_sell_notification(self, symbol: str, quantity: int, price: float, pnl: float = None, 
+                                   order_id: str = None, entry_price: float = None, 
+                                   sell_reason: str = None, target_hit: bool = False) -> bool:
+        """Send a detailed sell order notification with profit analysis via Telegram."""
+        try:
+            pnl_emoji = "🟢" if pnl and pnl > 0 else "🔴" if pnl and pnl < 0 else "⚪"
+            pnl_text = f"\n💰 **Realized P&L:** {pnl_emoji} ${pnl:,.2f}" if pnl is not None else ""
+            
+            # Calculate return percentage
+            return_text = ""
+            if entry_price and entry_price > 0:
+                return_pct = ((price - entry_price) / entry_price) * 100
+                return_emoji = "📈" if return_pct > 0 else "📉"
+                return_text = f"\n{return_emoji} **Return:** {return_pct:+.2f}% (${entry_price:.2f} → ${price:.2f})"
+            
+            # Add sell reason
+            reason_text = ""
+            if sell_reason:
+                if target_hit:
+                    reason_text = f"\n🎯 **Exit Reason:** Target achieved! {sell_reason}"
+                else:
+                    reason_text = f"\n📊 **Exit Reason:** {sell_reason}"
+            
+            # Performance assessment
+            performance_text = ""
+            if pnl is not None:
+                if pnl > 1000:
+                    performance_text = "\n🎉 **Excellent trade!** Major profit achieved"
+                elif pnl > 100:
+                    performance_text = "\n👍 **Good trade!** Solid profit"
+                elif pnl > 0:
+                    performance_text = "\n✅ **Profitable trade** completed"
+                elif pnl > -100:
+                    performance_text = "\n⚠️ **Small loss** - within risk tolerance"
+                else:
+                    performance_text = "\n🛑 **Loss contained** - risk management active"
+            
+            message = f"""
+🔴 **SELL ORDER EXECUTED** 🔴
+
+📉 **Symbol:** {symbol}
+📊 **Quantity:** {quantity:,} shares
+💰 **Exit Price:** ${price:.2f}
+💵 **Total Proceeds:** ${quantity * price:,.2f}{return_text}{pnl_text}{reason_text}
+🆔 **Order ID:** {order_id or 'N/A'}
+⏰ **Executed:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}{performance_text}
+
+📊 This is a PAPER TRADE (no real money involved)
+🤖 Executed by autonomous SignalFlow AI system
+            """.strip()
+            
+            success = await self._send_message(message)
+            if success:
+                logger.info(f"Enhanced sell notification sent for {symbol}: {quantity} shares @ ${price}")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending sell notification: {e}")
+            return False
+    
+    async def send_portfolio_update(self, total_value: float, cash: float, pnl_today: float = None) -> bool:
+        """Send portfolio update notification."""
+        try:
+            pnl_emoji = "🟢" if pnl_today and pnl_today > 0 else "🔴" if pnl_today and pnl_today < 0 else "⚪"
+            pnl_text = f"\n📈 **Today's P&L:** {pnl_emoji} ${pnl_today:,.2f}" if pnl_today is not None else ""
+            
+            message = f"""
+📊 **PORTFOLIO UPDATE** 📊
+
+💰 **Total Value:** ${total_value:,.2f}
+💵 **Cash:** ${cash:,.2f}
+📈 **Invested:** ${total_value - cash:,.2f}{pnl_text}
+⏰ **Time:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+
+📊 This is a PAPER TRADING account
+🤖 Autonomous trading system active
+            """.strip()
+            
+            success = await self._send_message(message)
+            if success:
+                logger.info(f"Portfolio update sent: ${total_value:,.2f} total value")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending portfolio update: {e}")
+            return False
+    
     async def send_exit_alert(self, ticker: str, exit_reason: str, 
                             current_price: float, entry_price: float, pnl: float) -> bool:
         """Send a trade exit alert."""
@@ -88,6 +226,120 @@ class TelegramNotifier:
             
         except Exception as e:
             logger.error(f"Error sending system alert: {e}")
+            return False
+    
+    async def send_trading_session_start(self, session_info: Dict[str, Any] = None) -> bool:
+        """Send notification when trading session starts."""
+        try:
+            portfolio_value = session_info.get('portfolio_value', 0) if session_info else 0
+            cash_available = session_info.get('cash_available', 0) if session_info else 0
+            watchlist_size = session_info.get('watchlist_size', 0) if session_info else 0
+            market_conditions = session_info.get('market_conditions', 'Unknown') if session_info else 'Analyzing...'
+            
+            message = f"""
+🟢 **TRADING SESSION STARTED** 🟢
+
+🤖 **SignalFlow AI Bot:** ONLINE
+📊 **Market Status:** ACTIVE
+⏰ **Started:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+
+💰 **Portfolio Value:** ${portfolio_value:,.2f}
+💵 **Cash Available:** ${cash_available:,.2f}
+📈 **Buying Power:** ${cash_available:,.2f}
+🎯 **Watchlist:** {watchlist_size} symbols
+
+🌡️ **Market Conditions:** {market_conditions}
+🔍 **AI Scanning:** Real-time market analysis active
+📱 **Notifications:** Full alert mode enabled
+
+🛡️ **Safety Mode:** Paper trading (no real money at risk)
+⚡ **Ready for autonomous trading signals**
+
+Good luck trading! 🚀
+            """.strip()
+            
+            success = await self._send_message(message)
+            if success:
+                logger.info("Trading session start notification sent")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending trading session start notification: {e}")
+            return False
+    
+    async def send_market_close_notification(self, daily_summary: Dict[str, Any] = None) -> bool:
+        """Send notification when market closes and bot shuts down."""
+        try:
+            # Extract daily performance data
+            if daily_summary:
+                total_trades = daily_summary.get('total_trades', 0)
+                winning_trades = daily_summary.get('winning_trades', 0)
+                daily_pnl = daily_summary.get('daily_pnl', 0)
+                best_trade = daily_summary.get('best_trade', {})
+                worst_trade = daily_summary.get('worst_trade', {})
+                portfolio_value = daily_summary.get('final_portfolio_value', 0)
+            else:
+                total_trades = winning_trades = daily_pnl = portfolio_value = 0
+                best_trade = worst_trade = {}
+            
+            # Calculate win rate
+            win_rate = (winning_trades / max(1, total_trades)) * 100 if total_trades > 0 else 0
+            
+            # Performance emoji and message
+            if daily_pnl > 500:
+                perf_emoji = "🎉"
+                perf_message = "Outstanding trading day!"
+            elif daily_pnl > 100:
+                perf_emoji = "💰"
+                perf_message = "Profitable day achieved!"
+            elif daily_pnl > 0:
+                perf_emoji = "✅"
+                perf_message = "Positive day completed"
+            elif daily_pnl > -100:
+                perf_emoji = "⚠️"
+                perf_message = "Minor loss - within tolerance"
+            else:
+                perf_emoji = "🔴"
+                perf_message = "Challenging day - learning for tomorrow"
+            
+            # Best trade info
+            best_trade_text = ""
+            if best_trade and 'symbol' in best_trade:
+                best_pnl = best_trade.get('pnl', 0)
+                best_trade_text = f"\n🏆 **Best Trade:** {best_trade['symbol']} (+${best_pnl:.2f})"
+            
+            message = f"""
+🔴 **MARKET CLOSED - TRADING SESSION ENDED** 🔴
+
+🤖 **SignalFlow AI Bot:** SHUTTING DOWN
+📊 **Market Status:** CLOSED
+⏰ **Session Ended:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+
+📈 **Daily Performance Summary:**
+{perf_emoji} **Overall:** {perf_message}
+💰 **P&L Today:** ${daily_pnl:+,.2f}
+📊 **Total Trades:** {total_trades}
+🎯 **Win Rate:** {win_rate:.1f}% ({winning_trades}/{total_trades})
+💼 **Portfolio Value:** ${portfolio_value:,.2f}{best_trade_text}
+
+🌙 **System Status:**
+🔕 **Notifications:** Reduced to critical only
+🛌 **AI Scanning:** Paused until market open
+📱 **Bot Status:** Standby mode active
+
+🌅 **Next Session:** Tomorrow at market open
+🛡️ **Safety:** All trades were paper trades (no real money)
+
+Rest well - see you tomorrow! 💤
+            """.strip()
+            
+            success = await self._send_message(message)
+            if success:
+                logger.info("Market close notification sent")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error sending market close notification: {e}")
             return False
     
     def _format_trade_alert(self, recommendation: Dict[str, Any], explanation: Dict[str, Any]) -> str:

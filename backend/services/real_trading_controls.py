@@ -4,6 +4,7 @@ Real Trading Controls - Direct integration with live trading system
 import asyncio
 import sys
 import os
+import time
 from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
@@ -114,16 +115,20 @@ class RealTradingController:
             result = await self.alpaca.place_buy_order(recommendation)
             
             if result and result.get('success'):
-                # Log to database
-                await self.db.log_trade({
-                    'ticker': ticker,
-                    'action': 'BUY',
-                    'shares': shares,
-                    'price': current_price,
-                    'timestamp': datetime.now(),
-                    'source': 'manual_dashboard',
-                    'order_id': result.get('order_id')
-                })
+                # Log to database using TradeRecord
+                from services.database_manager import TradeRecord
+                trade_record = TradeRecord(
+                    symbol=ticker,
+                    action='BUY',
+                    quantity=shares,
+                    price=current_price,
+                    timestamp=datetime.now(),
+                    source='manual_dashboard',
+                    confidence=8.0,  # Manual trades get high confidence
+                    execution_id=result.get('order_id', 'MANUAL_' + str(int(time.time()))),
+                    status='executed'
+                )
+                await self.db.save_trade(trade_record)
                 
                 # Send notification
                 await telegram_trading.send_message(
@@ -181,16 +186,20 @@ class RealTradingController:
             result = await self.alpaca.place_sell_order(ticker, shares)
             
             if result and result.get('success'):
-                # Log to database
-                await self.db.log_trade({
-                    'ticker': ticker,
-                    'action': 'SELL',
-                    'shares': shares,
-                    'price': current_price,
-                    'timestamp': datetime.now(),
-                    'source': 'manual_dashboard',
-                    'order_id': result.get('order_id')
-                })
+                # Log to database using TradeRecord
+                from services.database_manager import TradeRecord
+                trade_record = TradeRecord(
+                    symbol=ticker,
+                    action='SELL',
+                    quantity=shares,
+                    price=current_price,
+                    timestamp=datetime.now(),
+                    source='manual_dashboard',
+                    confidence=8.0,  # Manual trades get high confidence
+                    execution_id=result.get('order_id', 'MANUAL_' + str(int(time.time()))),
+                    status='executed'
+                )
+                await self.db.save_trade(trade_record)
                 
                 # Send notification
                 await telegram_trading.send_message(

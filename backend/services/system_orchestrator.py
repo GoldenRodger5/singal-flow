@@ -496,7 +496,22 @@ class TradingSystemOrchestrator:
                             # Create new event loop for this thread
                             loop = asyncio.new_event_loop()
                             asyncio.set_event_loop(loop)
-                            loop.run_until_complete(self.db_manager.log_trade(trade_record))
+                            # Use save_trade method with TradeRecord
+                            from services.database_manager import TradeRecord
+                            trade_obj = TradeRecord(
+                                execution_id=trade_record['execution_id'],
+                                symbol=trade_record['symbol'],
+                                action=trade_record['action'],
+                                quantity=trade_record['quantity'],
+                                price=trade_record['price'],
+                                timestamp=trade_record['timestamp'],
+                                source=trade_record['source'],
+                                status=trade_record['status'],
+                                confidence=trade_record['confidence'],
+                                profit_loss=trade_record.get('profit_loss', 0.0),
+                                paper_trade=trade_record.get('paper_trade', True)
+                            )
+                            loop.run_until_complete(self.db_manager.save_trade(trade_obj))
                             loop.close()
                         except Exception as e:
                             logger.error(f"Background trade logging error: {e}")
@@ -517,7 +532,22 @@ class TradingSystemOrchestrator:
         """Async method to log trade to database."""
         try:
             if hasattr(self, 'db_manager') and self.db_manager:
-                await self.db_manager.log_trade(trade_record)
+                from services.database_manager import TradeRecord
+                trade_obj = TradeRecord(
+                    execution_id=trade_record['execution_id'],
+                    symbol=trade_record['symbol'],
+                    action=trade_record['action'],
+                    quantity=trade_record['quantity'],
+                    price=trade_record['price'],
+                    timestamp=trade_record['timestamp'],
+                    source=trade_record['source'],
+                    status=trade_record['status'],
+                    confidence=trade_record['confidence'],
+                    profit_loss=trade_record.get('profit_loss', 0.0),
+                    paper_trade=trade_record.get('paper_trade', True)
+                )
+                await self.db_manager.save_trade(trade_obj)
+                logger.info(f"📝 Async trade logged to MongoDB: {trade_record['symbol']} {trade_record['action']}")
         except Exception as e:
             logger.error(f"Async trade logging error: {e}")
     

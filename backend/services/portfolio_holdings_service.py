@@ -315,6 +315,30 @@ class AsyncPortfolioWrapper:
             })
         
         return formatted_holdings
+    
+    async def get_holdings_dashboard_data(self):
+        """Get holdings dashboard data asynchronously."""
+        return self.service.get_holdings_dashboard_data()
+    
+    async def get_real_holdings_data(self):
+        """Get real holdings data asynchronously."""
+        return self.service.get_real_holdings_data()
+    
+    async def get_portfolio_allocation(self):
+        """Get portfolio allocation asynchronously."""
+        return self.service.get_portfolio_allocation()
+    
+    async def get_position_by_symbol(self, symbol: str):
+        """Get position by symbol asynchronously."""
+        return self.service.get_position_by_symbol(symbol)
+    
+    async def get_account_summary(self):
+        """Get account summary asynchronously."""
+        return self.service.get_account_summary()
+    
+    async def calculate_portfolio_summary(self, holdings):
+        """Calculate portfolio summary asynchronously."""
+        return self.service.calculate_portfolio_summary(holdings)
 
 # Replace the global service with async wrapper
 portfolio_holdings_service = AsyncPortfolioWrapper(PortfolioHoldingsService())

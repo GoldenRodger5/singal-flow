@@ -119,17 +119,14 @@ class PerformanceTracker:
             # Regime performance table
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS regime_performance (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date DATE,
-                    regime TEXT,
-                    trades INTEGER,
-                    wins INTEGER,
-                    losses INTEGER,
-                    win_rate REAL,
-                    total_pnl REAL,
-                    avg_pnl REAL,
+                    date TEXT NOT NULL,
+                    regime TEXT NOT NULL,
+                    regime_confidence REAL,
+                    total_signals INTEGER DEFAULT 0,
+                    successful_signals INTEGER DEFAULT 0,
+                    avg_return REAL DEFAULT 0.0,
+                    win_rate REAL DEFAULT 0.0,
                     PRIMARY KEY (date, regime)
-                ) WITHOUT ROWID
             """)
             
             conn.commit()

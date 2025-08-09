@@ -969,7 +969,9 @@ class AutomatedTradingManager:
                 await self._log_trade_to_database({
                     'ticker': ticker,
                     'action': 'BUY',
-                    'result': result,
+                    'shares': result.get('shares', 1),
+                    'price': signal.get('entry', 0.0),
+                    'order_id': result.get('order_id', ''),
                     'signal': signal,
                     'timestamp': datetime.now().isoformat()
                 })
@@ -983,12 +985,25 @@ class AutomatedTradingManager:
     async def _log_trade_to_database(self, trade_data: Dict[str, Any]):
         """Log trade to database using real database manager."""
         try:
-            from services.database_manager import DatabaseManager
+            from services.database_manager import DatabaseManager, TradeRecord
             
             db = DatabaseManager()
             
-            # Store in trades collection
-            await db.store_trade_data(trade_data)
+            # Create TradeRecord object with correct parameters
+            trade_record = TradeRecord(
+                symbol=trade_data.get('ticker', ''),
+                action=trade_data.get('action', 'BUY'),
+                quantity=trade_data.get('shares', 1),
+                price=trade_data.get('price', 0.0),
+                timestamp=datetime.now(),
+                source='autonomous_bot',
+                confidence=trade_data.get('signal', {}).get('confidence_score', 8.0),
+                execution_id=trade_data.get('order_id', 'AUTO_' + str(int(time.time()))),
+                status='executed'
+            )
+            
+            # Store in trades collection using correct method
+            await db.save_trade(trade_record)
             
             logger.info(f"Trade logged to database: {trade_data.get('ticker')}")
             

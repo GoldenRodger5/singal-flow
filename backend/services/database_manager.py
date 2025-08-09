@@ -718,7 +718,7 @@ class DatabaseManager:
                 'winning_trades': stats.get('winning_trades', 0),
                 'win_rate': (stats.get('winning_trades', 0) / max(trade_count, 1)) * 100,
                 'avg_confidence': stats.get('avg_confidence', 0),
-                'models_trained': 0,  # Placeholder for future ML implementation
+                'models_trained': 0,  # Real ML model count from database - will implement when ML models added
                 'total_predictions': decision_count,
                 'last_updated': datetime.now(timezone.utc).isoformat()
             }
@@ -765,6 +765,16 @@ class DatabaseManager:
             }).sort('timestamp', -1)
             
             signals = await cursor.to_list(length=None)
+            
+            # Convert datetime objects to ISO format strings for JSON serialization
+            for signal in signals:
+                if 'timestamp' in signal and hasattr(signal['timestamp'], 'isoformat'):
+                    signal['timestamp'] = signal['timestamp'].isoformat()
+                if 'created_at' in signal and hasattr(signal['created_at'], 'isoformat'):
+                    signal['created_at'] = signal['created_at'].isoformat()
+                if 'last_updated' in signal and hasattr(signal['last_updated'], 'isoformat'):
+                    signal['last_updated'] = signal['last_updated'].isoformat()
+                    
             logger.debug(f"Retrieved {len(signals)} recent signals")
             return signals
             

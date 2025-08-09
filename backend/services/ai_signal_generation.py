@@ -257,20 +257,22 @@ class AISignalGenerationService:
                 
                 if actual_return > best_return:
                     best_return = actual_return
+                    timestamp = signal_data.get('timestamp')
                     best_signal = {
                         'symbol': signal_data.get('symbol'),
                         'return': actual_return,
                         'signal_type': signal_data.get('signal_type'),
-                        'date': signal_data.get('timestamp')
+                        'date': timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp)
                     }
                 
                 if actual_return < worst_return:
                     worst_return = actual_return
+                    timestamp = signal_data.get('timestamp')
                     worst_signal = {
                         'symbol': signal_data.get('symbol'),
                         'return': actual_return,
                         'signal_type': signal_data.get('signal_type'),
-                        'date': signal_data.get('timestamp')
+                        'date': timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp)
                     }
             
             success_rate = (successful_signals / total_signals) * 100 if total_signals > 0 else 0
