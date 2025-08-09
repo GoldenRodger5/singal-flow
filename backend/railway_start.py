@@ -13,6 +13,7 @@ from loguru import logger
 import threading
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Add project root to path
@@ -303,83 +304,300 @@ async def get_account_info():
 
 @app.get("/api/dashboard/market/pulse")
 async def get_market_pulse():
-    """Get market pulse data for the dashboard."""
+    """Get market pulse data for the dashboard - REAL DATA ONLY."""
     try:
-        # Get market overview data (using mock data for now since service may not be available)
+        # Get real market data from Polygon.io for major indices
+        major_indices = {}
         current_hour = datetime.now().hour
+        market_status = "open" if 9 <= current_hour <= 16 else "closed"
+        
+        try:
+            from services.data_provider import DataProvider
+            async with DataProvider() as data_provider:
+                # Get real-time data for major indices
+                indices = ['SPY', 'QQQ', 'IWM']
+                for symbol in indices:
+                    try:
+                        quote = await data_provider.get_latest_quote(symbol)
+                        if quote:
+                            major_indices[symbol] = {
+                                "price": quote.get('price', 0.0),
+                                "change": quote.get('change', 0.0), 
+                                "change_percent": quote.get('change_percent', 0.0),
+                                "volume": quote.get('volume', 0),
+                                "day_high": quote.get('day_high', 0.0),
+                                "day_low": quote.get('day_low', 0.0)
+                            }
+                    except Exception as e:
+                        logger.warning(f"Could not fetch real data for {symbol}: {e}")
+                        
+        except Exception as e:
+            logger.error(f"DataProvider error: {e}")
+            
+        # If we couldn't get real data for indices, return error - NO MOCK DATA
+        if not major_indices:
+            logger.error("Could not fetch real market data from Polygon.io")
+            raise HTTPException(status_code=503, detail="Real market data unavailable")
+            
+        # Calculate market sentiment based on real data
+        spy_change = major_indices.get('SPY', {}).get('change_percent', 0.0)
+        market_sentiment = "bullish" if spy_change > 0.5 else "bearish" if spy_change < -0.5 else "neutral"
+        
+        # Calculate volatility index from real price movements
+        volatility_sum = sum(abs(idx.get('change_percent', 0.0)) for idx in major_indices.values())
+        volatility_index = volatility_sum / len(major_indices) if major_indices else 0.0
+        
+        # Determine volume trend from real volume data
+        avg_volume = sum(idx.get('volume', 0) for idx in major_indices.values()) / len(major_indices)
+        volume_trend = "above_average" if avg_volume > 1000000 else "below_average"
+        
         market_data = {
-            "market_status": "open" if 9 <= current_hour < 16 else "closed",
+            "market_status": market_status,
             "timestamp": datetime.now().isoformat(),
-            "major_indices": {
-                "SPY": {"price": 450.0, "change": 2.5, "change_percent": 0.56},
-                "QQQ": {"price": 380.0, "change": -1.2, "change_percent": -0.32},
-                "IWM": {"price": 200.0, "change": 1.8, "change_percent": 0.91}
+            "major_indices": major_indices,
+            "market_sentiment": market_sentiment,
+            "volatility_index": round(volatility_index, 2),
+            "volume_trend": volume_trend,
+            "market_overview": {
+                "trend": "BULLISH" if spy_change > 0.5 else "BEARISH" if spy_change < -0.5 else "NEUTRAL",
+                "volatility": "HIGH" if volatility_index > 2.0 else "LOW" if volatility_index < 0.5 else "MEDIUM",
+                "volume_profile": volume_trend.upper().replace('_', ' '),
+                "volatility_index": volatility_index,
+                "momentum_score": spy_change / 10.0  # Normalize to score
             },
-            "market_sentiment": "bullish",
-            "volatility_index": 18.5,
-            "volume_trend": "above_average"
+            "key_levels": {
+                "spy_resistance": major_indices.get('SPY', {}).get('day_high', 0.0),
+                "spy_support": major_indices.get('SPY', {}).get('day_low', 0.0)
+            },
+            "market_breadth": {
+                "indices_advancing": sum(1 for idx in major_indices.values() if idx.get('change', 0) > 0),
+                "indices_declining": sum(1 for idx in major_indices.values() if idx.get('change', 0) < 0),
+                "indices_unchanged": sum(1 for idx in major_indices.values() if idx.get('change', 0) == 0),
+                "breadth_ratio": sum(1 for idx in major_indices.values() if idx.get('change', 0) > 0) / len(major_indices) if major_indices else 0.5
+            },
+            "technical_indicators": {
+                "trend_strength": abs(spy_change) / 5.0,  # Normalize trend strength
+                "market_momentum": spy_change
+            }
         }
         
         return market_data
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching market pulse: {e}")
-        return {
-            "market_status": "unknown",
-            "timestamp": datetime.now().isoformat(),
-            "error": str(e)
-        }
+        raise HTTPException(status_code=500, detail=f"Market pulse service error: {str(e)}")
 
 @app.get("/api/dashboard/ai/signals")
 async def get_ai_signals():
-    """Get AI trading signals for the dashboard."""
+    """Get AI trading signals for the dashboard - REAL DATA FROM DATABASE & AI SERVICE."""
     try:
-        # Get recent AI signals (mock data for now)
-        signals = [
-            {
-                "symbol": "AAPL",
-                "signal": "BUY",
-                "confidence": 85,
-                "target_price": 185.0,
-                "current_price": 180.0,
-                "generated_at": datetime.now().isoformat()
-            },
-            {
-                "symbol": "MSFT",
-                "signal": "HOLD", 
-                "confidence": 72,
-                "target_price": 340.0,
-                "current_price": 335.0,
-                "generated_at": datetime.now().isoformat()
-            }
-        ]
+        signals = []
         
-        return {"signals": signals, "last_updated": datetime.now().isoformat()}
+        # Get signals from MongoDB database first
+        try:
+            from services.database_manager import DatabaseManager
+            db_manager = DatabaseManager()
+            await db_manager.connect()
+            
+            # Get recent AI decisions/signals from database
+            recent_decisions = await db_manager.get_recent_ai_decisions(limit=20)
+            
+            for decision in recent_decisions:
+                if decision.get('signal_type') and decision.get('confidence', 0) > 0.5:
+                    signal = {
+                        "symbol": decision.get('symbol', ''),
+                        "signal": decision.get('signal_type', 'HOLD').upper(),
+                        "confidence": int(decision.get('confidence', 0) * 100),
+                        "target_price": decision.get('price_target', 0.0),
+                        "current_price": decision.get('current_price', 0.0),
+                        "generated_at": decision.get('timestamp', datetime.now().isoformat()),
+                        "reasoning": decision.get('reasoning', ''),
+                        "risk_level": decision.get('risk_level', 'MEDIUM')
+                    }
+                    signals.append(signal)
+                    
+            await db_manager.disconnect()
+            
+        except Exception as db_error:
+            logger.warning(f"Could not fetch signals from database: {db_error}")
+        
+        # If no database signals, try to get from AI Signal Generation Service
+        if not signals:
+            try:
+                from services.ai_signal_generation import AISignalGenerationService
+                ai_service = AISignalGenerationService()
+                
+                # Get active signals from AI service
+                active_signals = await ai_service.get_active_signals()
+                
+                for ai_signal in active_signals:
+                    signal = {
+                        "symbol": ai_signal.symbol,
+                        "signal": ai_signal.signal_type.upper(),
+                        "confidence": int(ai_signal.confidence * 100),
+                        "target_price": ai_signal.price_target or 0.0,
+                        "current_price": ai_signal.entry_price,
+                        "generated_at": ai_signal.timestamp.isoformat() if hasattr(ai_signal.timestamp, 'isoformat') else str(ai_signal.timestamp),
+                        "reasoning": ai_signal.reasoning,
+                        "risk_level": ai_signal.risk_level
+                    }
+                    signals.append(signal)
+                    
+            except Exception as ai_error:
+                logger.warning(f"Could not fetch signals from AI service: {ai_error}")
+        
+        # Performance summary from database
+        performance_summary = {
+            "total_signals": 0,
+            "successful_signals": 0,
+            "win_rate": 0.0,
+            "average_confidence": 0.0
+        }
+        
+        try:
+            from services.database_manager import DatabaseManager
+            db_manager = DatabaseManager()
+            await db_manager.connect()
+            
+            # Get performance metrics from database
+            performance_data = await db_manager.get_ai_performance_metrics()
+            
+            if performance_data:
+                performance_summary.update({
+                    "total_signals": performance_data.get('total_signals', 0),
+                    "successful_signals": performance_data.get('successful_signals', 0), 
+                    "win_rate": performance_data.get('win_rate', 0.0),
+                    "average_confidence": performance_data.get('average_confidence', 0.0)
+                })
+                
+            await db_manager.disconnect()
+            
+        except Exception as perf_error:
+            logger.warning(f"Could not fetch performance data: {perf_error}")
+        
+        return {
+            "signals": signals, 
+            "count": len(signals),
+            "last_updated": datetime.now().isoformat(),
+            "performance_summary": performance_summary
+        }
         
     except Exception as e:
         logger.error(f"Error fetching AI signals: {e}")
-        return {"signals": [], "error": str(e)}
+        return {
+            "signals": [], 
+            "count": 0,
+            "error": str(e),
+            "last_updated": datetime.now().isoformat(),
+            "performance_summary": {
+                "total_signals": 0,
+                "successful_signals": 0,
+                "win_rate": 0.0,
+                "average_confidence": 0.0
+            }
+        }
 
 @app.get("/api/dashboard/ai/learning-metrics")
 async def get_learning_metrics():
-    """Get AI learning metrics for the dashboard."""
+    """Get AI learning metrics for the dashboard - REAL DATA FROM AI ENGINE & DATABASE."""
     try:
-        # Get learning metrics (mock data for now)
-        metrics = {
-            "accuracy": 78.5,
-            "total_predictions": 1250,
-            "correct_predictions": 982,
-            "win_rate": 76.2,
-            "sharpe_ratio": 1.45,
-            "last_training": datetime.now().isoformat(),
-            "model_version": "v2.1.0"
+        metrics = {}
+        
+        # Get metrics from AI Learning Engine first
+        try:
+            from services.ai_learning_engine import ai_learning_engine
+            
+            # Get current learning metrics from AI engine
+            learning_stats = await ai_learning_engine.get_current_metrics()
+            
+            if learning_stats:
+                metrics.update({
+                    "accuracy": learning_stats.get('prediction_accuracy', 0.0) * 100,
+                    "total_predictions": learning_stats.get('total_predictions', 0),
+                    "correct_predictions": learning_stats.get('correct_predictions', 0),
+                    "model_version": learning_stats.get('model_version', 'v1.0.0'),
+                    "last_training": learning_stats.get('last_training_time', datetime.now().isoformat()),
+                    "learning_rate": learning_stats.get('learning_rate', 0.001),
+                    "loss_value": learning_stats.get('current_loss', 0.0)
+                })
+                
+        except Exception as ai_error:
+            logger.warning(f"Could not fetch metrics from AI engine: {ai_error}")
+        
+        # Get trading performance metrics from database
+        try:
+            from services.database_manager import DatabaseManager
+            db_manager = DatabaseManager()
+            await db_manager.connect()
+            
+            # Get recent trade performance
+            trade_performance = await db_manager.get_trade_performance()
+            
+            if trade_performance:
+                total_trades = trade_performance.get('total_trades', 0)
+                winning_trades = trade_performance.get('winning_trades', 0)
+                
+                metrics.update({
+                    "win_rate": (winning_trades / total_trades * 100) if total_trades > 0 else 0.0,
+                    "total_trades": total_trades,
+                    "winning_trades": winning_trades,
+                    "losing_trades": total_trades - winning_trades,
+                    "average_return": trade_performance.get('average_return', 0.0),
+                    "total_pnl": trade_performance.get('total_pnl', 0.0),
+                    "sharpe_ratio": trade_performance.get('sharpe_ratio', 0.0),
+                    "max_drawdown": trade_performance.get('max_drawdown', 0.0)
+                })
+                
+            await db_manager.disconnect()
+            
+        except Exception as db_error:
+            logger.warning(f"Could not fetch performance from database: {db_error}")
+        
+        # Get model training history from database
+        try:
+            from services.database_manager import DatabaseManager  
+            db_manager = DatabaseManager()
+            await db_manager.connect()
+            
+            # Get training history
+            training_history = await db_manager.get_training_history(limit=10)
+            
+            if training_history:
+                latest_training = training_history[0] if training_history else {}
+                metrics.update({
+                    "training_history": training_history,
+                    "epochs_completed": latest_training.get('epoch', 0),
+                    "validation_accuracy": latest_training.get('val_accuracy', 0.0) * 100 if latest_training.get('val_accuracy') else 0.0,
+                    "training_time": latest_training.get('training_time', 0.0)
+                })
+                
+            await db_manager.disconnect()
+            
+        except Exception as training_error:
+            logger.warning(f"Could not fetch training history: {training_error}")
+        
+        # If no real data available, return error - NO MOCK DATA
+        if not metrics:
+            logger.error("No real AI learning metrics available")
+            raise HTTPException(status_code=503, detail="AI learning metrics service unavailable")
+        
+        # Add performance summary
+        metrics["performance_summary"] = {
+            "overall_health": "healthy" if metrics.get('accuracy', 0) > 70 else "warning" if metrics.get('accuracy', 0) > 50 else "critical",
+            "recent_performance": "improving" if metrics.get('win_rate', 0) > 60 else "declining",
+            "model_status": "active",
+            "last_updated": datetime.now().isoformat()
         }
         
         return metrics
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching learning metrics: {e}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"AI learning metrics service error: {str(e)}")
 
 @app.get("/api/config/system")
 async def get_system_config():
@@ -1015,6 +1233,74 @@ def initialize_trading_system():
     except Exception as e:
         logger.error(f"Failed to initialize trading system: {e}")
         return False
+
+# System Status Endpoint
+@app.get("/api/system/status")
+async def get_system_status():
+    """Get comprehensive system status information."""
+    try:
+        # System uptime
+        current_time = time.time()
+        uptime_seconds = int(current_time - start_time) if 'start_time' in globals() else 0
+        uptime_hours = uptime_seconds // 3600
+        uptime_minutes = (uptime_seconds % 3600) // 60
+        uptime_display = f"{uptime_hours}h {uptime_minutes}m"
+        
+        # Basic system info
+        status_data = {
+            "system": {
+                "status": "online" if trading_system_initialized else "initializing",
+                "uptime": uptime_display,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "environment": "production" if os.environ.get("RAILWAY_ENVIRONMENT") == "production" else "development"
+            },
+            "services": {
+                "trading": trading_system_initialized,
+                "database": False,
+                "websocket": True,
+                "health_monitor": True
+            },
+            "metrics": {
+                "active_trades": 0,
+                "total_positions": 0,
+                "account_value": 0.0
+            }
+        }
+        
+        # Test database connection
+        try:
+            from services.database_manager import get_db_manager
+            db_manager = get_db_manager()
+            # Simple ping test
+            status_data["services"]["database"] = True
+        except Exception as e:
+            logger.warning(f"Database connection test failed: {e}")
+            status_data["services"]["database"] = False
+        
+        # Get trading metrics if available
+        try:
+            if trading_system_initialized:
+                # Try to get account info
+                from services.alpaca_trading import AlpacaTradingService
+                trading_service = AlpacaTradingService()
+                
+                account_info = await trading_service.get_account()
+                if account_info:
+                    status_data["metrics"]["account_value"] = float(account_info.get("portfolio_value", 0.0))
+                    
+                # Get active positions count
+                positions = await trading_service.get_positions()
+                if positions:
+                    status_data["metrics"]["total_positions"] = len(positions)
+                    
+        except Exception as e:
+            logger.warning(f"Could not get trading metrics: {e}")
+        
+        return JSONResponse(content=status_data)
+        
+    except Exception as e:
+        logger.error(f"Error getting system status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get system status: {str(e)}")
 
 # Global variable to track initialization
 

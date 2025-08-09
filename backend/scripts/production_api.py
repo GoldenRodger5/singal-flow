@@ -187,7 +187,7 @@ async def startup_event():
         else:
             logger.warning("⚠️ Trading orchestrator not available")
         
-        # Send startup notification
+        # Send startup notification (simplified to avoid duplicates)
         try:
             await telegram_trading.send_message(
                 "🚀 *SIGNAL FLOW STARTED*\n\n"

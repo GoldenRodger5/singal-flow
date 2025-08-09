@@ -589,35 +589,19 @@ class SignalFlowOrchestrator:
             logger.info(f"Market Status: {market_status}")
             
             if market_status in ["WEEKEND", "MARKET_CLOSED"]:
-                # Send notification about why system is NOT starting
-                try:
-                    from services.telegram_trading import telegram_trading
-                    
-                    if market_status == "WEEKEND":
-                        next_open, _ = market_hours.get_next_market_session()
-                        await telegram_trading.send_message(
-                            "⏰ *TRADING SYSTEM - WEEKEND MODE*\n\n"
-                            f"📅 Current Time: {current_time.strftime('%A, %B %d at %I:%M %p EST')}\n"
-                            f"🚫 Status: Markets are CLOSED (Weekend)\n"
-                            f"📈 Next Market Session: {next_open.strftime('%A, %B %d at %I:%M %p EST')}\n\n"
-                            "✅ System will automatically start during market hours\n"
-                            "💤 No trading notifications until Monday 9:30 AM EST"
-                        )
-                    else:
-                        minutes_until = market_hours.time_until_market_open()
-                        if minutes_until:
-                            from utils.market_hours import format_time_until
-                            time_until_text = format_time_until(minutes_until)
-                            await telegram_trading.send_message(
-                                "⏰ *TRADING SYSTEM - AFTER HOURS*\n\n"
-                                f"📅 Current Time: {current_time.strftime('%I:%M %p EST')}\n"
-                                f"🚫 Status: Markets are CLOSED\n"
-                                f"📈 Market opens in: {time_until_text}\n\n"
-                                "✅ System will start during market hours (9:30 AM - 4:00 PM EST)\n"
-                                "💤 No trading activity until market open"
-                            )
-                except Exception as e:
-                    logger.warning(f"Failed to send market hours notification: {e}")
+                # Log market status but don't send notification (production API handles this)
+                logger.info(f"📅 Market Status: {market_status}")
+                if market_status == "WEEKEND":
+                    next_open, _ = market_hours.get_next_market_session()
+                    logger.info(f"🚫 Markets are CLOSED (Weekend) - Next session: {next_open.strftime('%A, %B %d at %I:%M %p EST')}")
+                else:
+                    minutes_until = market_hours.time_until_market_open()
+                    if minutes_until:
+                        from utils.market_hours import format_time_until
+                        time_until_text = format_time_until(minutes_until)
+                        logger.info(f"🚫 Markets are CLOSED - Opens in: {time_until_text}")
+                
+                # Note: Telegram notification is handled by production_api.py to avoid duplicates
                 
                 logger.info("Trading system NOT started - outside market hours")
                 return

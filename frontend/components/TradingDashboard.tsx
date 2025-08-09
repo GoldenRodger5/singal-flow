@@ -81,14 +81,18 @@ export default function TradingDashboard() {
       setLoading(true)
       setError(null)
       
-      // Use working endpoints instead of unimplemented dashboard endpoints
-      const [holdingsRes, accountRes] = await Promise.all([
-        fetch(`${backendUrl}/api/holdings`),
-        fetch(`${backendUrl}/api/account`)
+      // Use comprehensive backend endpoints
+      const [holdingsRes, accountRes, performanceRes, watchlistRes] = await Promise.all([
+        fetch(`${backendUrl}/api/dashboard/holdings/detailed`).catch(() => 
+          fetch(`${backendUrl}/api/holdings`)
+        ),
+        fetch(`${backendUrl}/api/account`),
+        fetch(`${backendUrl}/api/dashboard/analytics/performance`).catch(() => null),
+        fetch(`${backendUrl}/api/dashboard/watchlist/signals`).catch(() => null)
       ])
 
       if (!holdingsRes.ok || !accountRes.ok) {
-        throw new Error('Failed to fetch trading data from backend')
+        throw new Error('Failed to fetch core trading data from backend')
       }
 
       const [holdingsData, accountData] = await Promise.all([
@@ -96,22 +100,33 @@ export default function TradingDashboard() {
         accountRes.json()
       ])
 
-      // Map basic holdings data to detailed format
+      // Get performance and watchlist data if available
+      const performanceData = performanceRes && performanceRes.ok 
+        ? await performanceRes.json() 
+        : null
+
+      const watchlistData = watchlistRes && watchlistRes.ok 
+        ? await watchlistRes.json() 
+        : null
+
+      // Map holdings data (handle both detailed and basic format)
       const mappedHoldings = (holdingsData.holdings || []).map((holding: any) => ({
         symbol: holding.symbol,
-        qty: holding.quantity,
+        qty: holding.qty || holding.quantity,
         market_value: holding.market_value,
-        entry_price: holding.current_price, // Approximation - actual entry price not available
+        entry_price: holding.entry_price || holding.current_price,
         current_price: holding.current_price,
-        unrealized_pl: holding.unrealized_pnl,
-        unrealized_pnl_percent: holding.percentage_change,
-        position_size_percent: accountData.portfolio_value > 0 ? (holding.market_value / accountData.portfolio_value) * 100 : 0,
-        risk_metrics: {
-          beta: null, // Not available without external data
+        unrealized_pl: holding.unrealized_pl || holding.unrealized_pnl,
+        unrealized_pnl_percent: holding.unrealized_pnl_percent || holding.percentage_change,
+        position_size_percent: accountData.portfolio_value > 0 
+          ? (holding.market_value / accountData.portfolio_value) * 100 
+          : 0,
+        risk_metrics: holding.risk_metrics || {
+          beta: null,
           volatility: null,
           sharpe_ratio: null
         },
-        ai_signals: {
+        ai_signals: holding.ai_signals || {
           current_signal: 'DATA_UNAVAILABLE',
           confidence: 0,
           next_review: null
@@ -119,9 +134,31 @@ export default function TradingDashboard() {
       }))
 
       setDetailedHoldings(mappedHoldings)
-      // Clear unavailable data instead of showing mock data
-      setPerformanceAnalytics(null)
-      setWatchlistSignals([])
+      
+      // Set performance analytics if available
+      if (performanceData) {
+        setPerformanceAnalytics(performanceData)
+      } else {
+        setPerformanceAnalytics(null)
+      }
+
+      // Set watchlist signals if available
+      if (watchlistData && watchlistData.signals) {
+        setWatchlistSignals(watchlistData.signals.map((signal: any) => ({
+          symbol: signal.symbol,
+          signal_type: signal.signal_type || signal.action || 'HOLD',
+          confidence: signal.confidence || 0,
+          current_price: signal.current_price || 0,
+          target_price: signal.target_price || 0,
+          stop_loss: signal.stop_loss || 0,
+          technical_score: signal.technical_score || 0,
+          fundamental_score: signal.fundamental_score || 0,
+          sentiment_score: signal.sentiment_score || 0,
+          last_updated: signal.last_updated || signal.timestamp || new Date().toISOString()
+        })))
+      } else {
+        setWatchlistSignals([])
+      }
       
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to fetch trading data'

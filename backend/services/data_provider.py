@@ -60,6 +60,52 @@ class PolygonDataProvider:
         endpoint = f"/v3/reference/tickers/{ticker}"
         return await self._make_request(endpoint)
     
+    async def get_latest_quote(self, ticker: str) -> Dict[str, Any]:
+        """Get latest quote data for a ticker."""
+        try:
+            # Get market snapshot which includes current quote
+            snapshot = await self.get_market_snapshot(ticker)
+            
+            if not snapshot or 'results' not in snapshot:
+                return {}
+                
+            result = snapshot['results']
+            if not result:
+                return {}
+                
+            # Get previous close for change calculation
+            prev_close_data = await self.get_previous_close(ticker)
+            prev_close = 0.0
+            
+            if prev_close_data and 'results' in prev_close_data:
+                prev_results = prev_close_data['results']
+                if prev_results:
+                    prev_close = prev_results[0].get('c', 0.0)
+            
+            # Extract current quote data
+            current_price = result.get('value', result.get('last', {}).get('price', 0.0))
+            change = current_price - prev_close if prev_close > 0 else 0.0
+            change_percent = (change / prev_close * 100) if prev_close > 0 else 0.0
+            
+            quote_data = {
+                'symbol': ticker,
+                'price': current_price,
+                'change': change,
+                'change_percent': change_percent,
+                'volume': result.get('session', {}).get('volume', result.get('volume', 0)),
+                'day_high': result.get('session', {}).get('high', result.get('high', current_price)),
+                'day_low': result.get('session', {}).get('low', result.get('low', current_price)),
+                'day_open': result.get('session', {}).get('open', result.get('open', current_price)),
+                'previous_close': prev_close,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return quote_data
+            
+        except Exception as e:
+            logger.error(f"Error getting latest quote for {ticker}: {e}")
+            return {}
+
     async def get_market_snapshot(self, ticker: str) -> Dict[str, Any]:
         """Get current market snapshot for a ticker."""
         endpoint = f"/v2/snapshot/locale/us/markets/stocks/tickers/{ticker}"

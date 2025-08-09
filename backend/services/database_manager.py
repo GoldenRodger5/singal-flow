@@ -985,6 +985,67 @@ _db_manager = None
 
 # For backward compatibility, create a lazy property that only initializes when accessed
 class LazyDBManager:
+    async def get_recent_ai_decisions(self, limit: int = 50) -> List[Dict]:
+        """Get recent AI trading decisions from database."""
+        try:
+            await self.ensure_connected()
+            cursor = self.db.ai_decisions.find().sort("timestamp", -1).limit(limit)
+            decisions = []
+            async for decision in cursor:
+                decision["_id"] = str(decision["_id"])
+                if "timestamp" in decision and hasattr(decision["timestamp"], "isoformat"):
+                    decision["timestamp"] = decision["timestamp"].isoformat()
+                decisions.append(decision)
+            return decisions
+        except Exception as e:
+            logger.error(f"Error fetching recent AI decisions: {e}")
+            return []
+    
+    async def get_ai_performance_metrics(self) -> Optional[Dict]:
+        """Get AI performance metrics from database."""
+        try:
+            await self.ensure_connected()
+            
+            # Get recent AI decisions for performance calculation
+            recent_decisions = await self.get_recent_ai_decisions(limit=100)
+            
+            if not recent_decisions:
+                return None
+                
+            total_signals = len(recent_decisions)
+            successful_signals = sum(1 for d in recent_decisions if d.get('success', False))
+            
+            # Calculate average confidence
+            confidences = [d.get('confidence', 0.0) for d in recent_decisions if 'confidence' in d]
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
+            
+            return {
+                "total_signals": total_signals,
+                "successful_signals": successful_signals,
+                "win_rate": (successful_signals / total_signals) if total_signals > 0 else 0.0,
+                "average_confidence": avg_confidence
+            }
+            
+        except Exception as e:
+            logger.error(f"Error fetching AI performance metrics: {e}")
+            return None
+    
+    async def get_training_history(self, limit: int = 10) -> List[Dict]:
+        """Get AI model training history from database."""
+        try:
+            await self.ensure_connected()
+            cursor = self.db.training_history.find().sort("timestamp", -1).limit(limit)
+            history = []
+            async for record in cursor:
+                record["_id"] = str(record["_id"])
+                if "timestamp" in record and hasattr(record["timestamp"], "isoformat"):
+                    record["timestamp"] = record["timestamp"].isoformat()
+                history.append(record)
+            return history
+        except Exception as e:
+            logger.error(f"Error fetching training history: {e}")
+            return []
+
     def __getattr__(self, name):
         db_mgr = get_db_manager()
         return getattr(db_mgr, name)
