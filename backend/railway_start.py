@@ -212,6 +212,12 @@ async def get_holdings():
         logger.error(f"Error fetching holdings: {e}")
         return {"holdings": [], "total_value": 0.0, "error": str(e)}
 
+@app.get("/api/positions")
+async def get_positions():
+    """Get current positions (alias for holdings) from the trading system."""
+    # This is an alias for get_holdings to ensure compatibility
+    return await get_holdings()
+
 @app.get("/api/account")
 async def get_account_info():
     """Get account information from the trading system."""
@@ -357,6 +363,75 @@ async def get_system_status():
     except Exception as e:
         logger.error(f"Error fetching system status: {e}")
         return {"error": str(e)}
+
+@app.get("/api/trades/active")
+async def get_active_trades():
+    """Get active trades from the trading system."""
+    try:
+        from services.alpaca_trading import AlpacaTradingService
+        
+        trading_service = AlpacaTradingService()
+        
+        # Get open orders from Alpaca
+        orders = trading_service.api.list_orders(
+            status='open',
+            limit=50
+        )
+        
+        active_trades = []
+        for order in orders:
+            active_trades.append({
+                "id": order.id,
+                "symbol": order.symbol,
+                "side": order.side,
+                "quantity": float(order.qty),
+                "order_type": order.order_type,
+                "time_in_force": order.time_in_force,
+                "filled_qty": float(order.filled_qty) if order.filled_qty else 0.0,
+                "status": order.status,
+                "submitted_at": order.submitted_at.isoformat() if order.submitted_at else None,
+                "filled_at": order.filled_at.isoformat() if order.filled_at else None
+            })
+        
+        return {
+            "active_trades": active_trades,
+            "count": len(active_trades),
+            "last_updated": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching active trades: {e}")
+        return {"active_trades": [], "count": 0, "error": str(e)}
+
+@app.get("/api/ai/decisions/recent")
+async def get_recent_ai_decisions():
+    """Get recent AI trading decisions."""
+    try:
+        from services.database_manager import get_db_manager
+        
+        db_manager = get_db_manager()
+        
+        # Get recent AI decisions from MongoDB
+        recent_decisions = []
+        try:
+            cursor = db_manager.db.ai_decisions.find().sort("timestamp", -1).limit(50)
+            for decision in cursor:
+                decision["_id"] = str(decision["_id"])  # Convert ObjectId to string
+                if "timestamp" in decision and hasattr(decision["timestamp"], "isoformat"):
+                    decision["timestamp"] = decision["timestamp"].isoformat()
+                recent_decisions.append(decision)
+        except Exception as db_error:
+            logger.warning(f"MongoDB query failed: {db_error}")
+        
+        return {
+            "decisions": recent_decisions,
+            "count": len(recent_decisions),
+            "last_updated": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching recent AI decisions: {e}")
+        return {"decisions": [], "count": 0, "error": str(e)}
 
 @app.get("/api/portfolio")
 async def get_portfolio_summary():
