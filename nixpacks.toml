@@ -1,9 +1,9 @@
 # nixpacks.toml - Railway Build Configuration
 [phases.setup]
-nixPkgs = ["python312", "python312Packages.pip", "python312Packages.setuptools", "python312Packages.wheel"]
+nixPkgs = ["python312", "python312Packages.pip"]
 
 [phases.install] 
-cmds = ["pip install --upgrade pip setuptools wheel", "pip install --no-cache-dir -r requirements-railway.txt"]
+cmds = ["pip install --no-cache-dir -r requirements-railway.txt --break-system-packages"]
 
 [start]
 cmd = "cd backend && python railway_start.py"
