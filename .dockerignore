@@ -1,0 +1,75 @@
+# .dockerignore - Reduce Build Context Size
+
+# Development files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Cache directories
+cache/
+.cache/
+.pytest_cache/
+
+# Data files (not needed in production)
+data/
+*.csv
+*.json
+*.parquet
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Archive and backup files
+archive/
+backup/
+*.bak
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Development requirements (use minimal for prod)
+requirements.txt
+requirements_*.txt
+!requirements-minimal.txt
+
+# Frontend (not needed for backend deployment)
+frontend/
+node_modules/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Virtual environments
+.conda/
+conda-meta/
