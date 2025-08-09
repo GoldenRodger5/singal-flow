@@ -47,8 +47,8 @@ class Config:
     # Database Configuration (MongoDB Atlas)
     MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb+srv://username:password@cluster.mongodb.net/')
     MONGODB_NAME = os.getenv('MONGODB_NAME', 'signal_flow_trading')
-    MONGODB_CONNECTION_TIMEOUT = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 10000))  # 10 seconds
-    MONGODB_SERVER_TIMEOUT = int(os.getenv('MONGODB_SERVER_TIMEOUT', 10000))  # 10 seconds
+    MONGODB_CONNECTION_TIMEOUT = int(os.getenv('MONGODB_CONNECTION_TIMEOUT', 30000))  # 30 seconds for Railway
+    MONGODB_SERVER_TIMEOUT = int(os.getenv('MONGODB_SERVER_TIMEOUT', 30000))  # 30 seconds for Railway
     
     # Local Server Configuration
     LOCAL_SERVER_PORT = int(os.getenv('LOCAL_SERVER_PORT', 8000))
@@ -107,7 +107,7 @@ class Config:
     # Auto Trading Configuration
     AUTO_TRADING_ENABLED = os.getenv('AUTO_TRADING_ENABLED', 'true').lower() == 'true'
     INTERACTIVE_TRADING_ENABLED = os.getenv('INTERACTIVE_TRADING_ENABLED', 'false').lower() == 'true'
-    TRADE_CONFIRMATION_TIMEOUT = int(os.getenv('TRADE_CONFIRMATION_TIMEOUT', 30))  # seconds
+    TRADE_CONFIRMATION_TIMEOUT = int(os.getenv('TRADE_CONFIRMATION_TIMEOUT', 120))  # 2 minutes for Railway
     
     # Enhanced Data Collection Configuration
     WATCHLIST_SIZE = 100  # Doubled for more opportunities

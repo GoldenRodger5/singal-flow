@@ -1,1 +1,1 @@
-web: cd backend && uvicorn scripts.production_api:app --host 0.0.0.0 --port $PORT
+web: cd backend && python railway_api.py

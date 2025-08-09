@@ -50,7 +50,7 @@ class SafetyLimits:
     min_account_balance: float = 10000  # Minimum account balance
     max_consecutive_losses: int = 8  # Increased for experimentation
     circuit_breaker_loss_pct: float = 0.15  # 15% daily loss triggers circuit breaker - Much higher for paper trading
-    connectivity_timeout_seconds: int = 30
+    connectivity_timeout_seconds: int = 60  # Increased for Railway deployment
 
 
 @dataclass

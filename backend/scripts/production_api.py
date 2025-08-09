@@ -16,19 +16,46 @@ from loguru import logger
 from pathlib import Path
 
 # Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent))
+current_dir = Path(__file__).parent
+backend_dir = current_dir.parent
+sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir.parent))
 
 from services.health_monitor import health_monitor
 from services.database_manager import get_db_manager, TradeRecord
 from services.alpaca_trading import AlpacaTradingService
 from services.telegram_trading import telegram_trading
 
-# Import Polygon.io Trading Engines
-from services.anomaly_detection import get_anomaly_engine
-from services.websocket_engine import websocket_engine
-from services.short_squeeze_detector import squeeze_detector
-from services.sentiment_trading import sentiment_engine
-from services.master_trading_coordinator import master_coordinator
+# Import Polygon.io Trading Engines with error handling
+try:
+    from services.anomaly_detection import get_anomaly_engine
+except ImportError as e:
+    logger.warning(f"Anomaly detection service unavailable: {e}")
+    get_anomaly_engine = lambda: None
+
+try:
+    from services.websocket_engine import websocket_engine
+except ImportError as e:
+    logger.warning(f"WebSocket engine service unavailable: {e}")
+    websocket_engine = None
+
+try:
+    from services.short_squeeze_detector import squeeze_detector
+except ImportError as e:
+    logger.warning(f"Squeeze detector service unavailable: {e}")
+    squeeze_detector = None
+
+try:
+    from services.sentiment_trading import sentiment_engine
+except ImportError as e:
+    logger.warning(f"Sentiment engine service unavailable: {e}")
+    sentiment_engine = None
+
+try:
+    from services.master_trading_coordinator import master_coordinator
+except ImportError as e:
+    logger.warning(f"Master coordinator service unavailable: {e}")
+    master_coordinator = None
 
 # Global database manager - will be initialized on first access
 db_manager = None
@@ -54,7 +81,21 @@ def get_orchestrator():
     global orchestrator
     if orchestrator is None:
         try:
-            from main import SignalFlowOrchestrator
+            # Try multiple import paths for Railway deployment
+            try:
+                from main import SignalFlowOrchestrator
+            except ImportError:
+                # Try from backend directory
+                try:
+                    from backend.main import SignalFlowOrchestrator
+                except ImportError:
+                    # Try with relative import
+                    import sys
+                    from pathlib import Path
+                    backend_path = Path(__file__).parent.parent
+                    sys.path.insert(0, str(backend_path))
+                    from main import SignalFlowOrchestrator
+            
             orchestrator = SignalFlowOrchestrator()
         except Exception as e:
             logger.error(f"Failed to initialize orchestrator: {e}")
@@ -113,13 +154,24 @@ async def startup_event():
     
     # Initialize Polygon.io Trading Engines
     try:
-        # Initialize all trading engines
-        anomaly_detector = get_anomaly_engine()
-        await anomaly_detector.initialize()
-        await websocket_engine.initialize()
-        await squeeze_detector.__aenter__()
-        await sentiment_engine.initialize()
-        await master_coordinator.initialize()
+        # Initialize all trading engines with null checks
+        if get_anomaly_engine:
+            anomaly_detector = get_anomaly_engine()
+            if anomaly_detector and hasattr(anomaly_detector, 'initialize'):
+                await anomaly_detector.initialize()
+        
+        if websocket_engine and hasattr(websocket_engine, 'initialize'):
+            await websocket_engine.initialize()
+        
+        if squeeze_detector and hasattr(squeeze_detector, '__aenter__'):
+            await squeeze_detector.__aenter__()
+        
+        if sentiment_engine and hasattr(sentiment_engine, 'initialize'):
+            await sentiment_engine.initialize()
+        
+        if master_coordinator and hasattr(master_coordinator, 'initialize'):
+            await master_coordinator.initialize()
+            
         logger.info("✅ Polygon.io trading engines initialized successfully")
         
     except Exception as e:
@@ -915,28 +967,70 @@ async def websocket_trade_updates(websocket: WebSocket):
     
     try:
         # Send initial active trades
-        active_trades = await get_db().get_active_trades()
+        db = get_db()
+        if db:
+            active_trades = await db.get_active_trades() if hasattr(db, 'get_active_trades') else []
+        else:
+            active_trades = []
+            
         await websocket.send_text(json.dumps({
             'type': 'initial_trades',
             'data': active_trades
         }))
         
-        # TODO: Implement real-time trade updates
-        # This would require a pub/sub mechanism or database change streams
+        # Real-time trade monitoring loop
+        last_check = datetime.now()
         
         while True:
-            message = await websocket.receive_text()
-            if message == "get_trades":
-                current_trades = await get_db().get_active_trades()
+            try:
+                # Non-blocking message receive with timeout
+                message = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)  # Increased from 5 to 30 seconds
+                
+                if message == "get_trades":
+                    if db and hasattr(db, 'get_active_trades'):
+                        current_trades = await db.get_active_trades()
+                    else:
+                        current_trades = []
+                    await websocket.send_text(json.dumps({
+                        'type': 'trade_update',
+                        'data': current_trades
+                    }))
+                    
+            except asyncio.TimeoutError:
+                # Periodic update check - send heartbeat and trade updates
+                current_time = datetime.now()
+                
+                # Send heartbeat
                 await websocket.send_text(json.dumps({
-                    'type': 'trade_update',
-                    'data': current_trades
+                    'type': 'heartbeat',
+                    'timestamp': current_time.isoformat()
                 }))
-            
+                
+                # Check for trade updates every 30 seconds
+                if (current_time - last_check).seconds >= 30:
+                    if db and hasattr(db, 'get_active_trades'):
+                        current_trades = await db.get_active_trades()
+                        await websocket.send_text(json.dumps({
+                            'type': 'trade_update',
+                            'data': current_trades,
+                            'timestamp': current_time.isoformat()
+                        }))
+                    last_check = current_time
+                    
+            except WebSocketDisconnect:
+                break
+                
     except WebSocketDisconnect:
-        pass
+        logger.info("WebSocket client disconnected from /ws/trades")
     except Exception as e:
         logger.error(f"Trade WebSocket error: {e}")
+        try:
+            await websocket.send_text(json.dumps({
+                'type': 'error',
+                'message': 'Connection error occurred'
+            }))
+        except:
+            pass
 
 
 # ==================== POLYGON.IO TRADING ENGINES ====================
