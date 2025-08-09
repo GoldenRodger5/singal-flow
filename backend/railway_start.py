@@ -64,17 +64,94 @@ app.add_middleware(
 async def root():
     return {"status": "Signal Flow Trading Bot is running", "timestamp": datetime.now()}
 
+@app.get("/debug/mongodb")
+async def debug_mongodb_connection():
+    """Debug MongoDB connection issues."""
+    try:
+        import os
+        from services.config import Config
+        
+        config = Config()
+        
+        debug_info = {
+            "mongodb_url_exists": bool(config.MONGODB_URL),
+            "mongodb_url_length": len(config.MONGODB_URL) if config.MONGODB_URL else 0,
+            "mongodb_url_preview": config.MONGODB_URL[:50] + "..." if config.MONGODB_URL and len(config.MONGODB_URL) > 50 else config.MONGODB_URL,
+            "mongodb_name": config.MONGODB_NAME,
+            "environment_vars": {
+                "MONGODB_URL": bool(os.getenv('MONGODB_URL')),
+                "MONGODB_NAME": os.getenv('MONGODB_NAME', 'Not Set'),
+                "NODE_ENV": os.getenv('NODE_ENV', 'Not Set'),
+                "RAILWAY_ENVIRONMENT": os.getenv('RAILWAY_ENVIRONMENT', 'Not Set')
+            }
+        }
+        
+        # Test actual MongoDB connection
+        try:
+            from pymongo import MongoClient
+            from urllib.parse import quote_plus
+            
+            if config.MONGODB_URL:
+                client = MongoClient(config.MONGODB_URL, serverSelectionTimeoutMS=5000)
+                # Test the connection
+                client.admin.command('ping')
+                debug_info["mongodb_connection_test"] = "SUCCESS"
+                client.close()
+            else:
+                debug_info["mongodb_connection_test"] = "NO_URL_PROVIDED"
+                
+        except Exception as mongo_error:
+            debug_info["mongodb_connection_test"] = f"FAILED: {str(mongo_error)}"
+        
+        return debug_info
+        
+    except Exception as e:
+        return {"error": f"Debug endpoint failed: {str(e)}"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Railway."""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(),
-        "uptime": time.time() - start_time,
-        "mode": "paper_trading",
-        "environment": "railway",
-        "trading_system_initialized": trading_system_initialized
-    }
+    try:
+        # Test MongoDB connection
+        mongodb_status = "unknown"
+        mongodb_error = None
+        
+        try:
+            from services.config import Config
+            config = Config()
+            
+            if config.MONGODB_URL:
+                from pymongo import MongoClient
+                client = MongoClient(config.MONGODB_URL, serverSelectionTimeoutMS=3000)
+                client.admin.command('ping')
+                mongodb_status = "connected"
+                client.close()
+            else:
+                mongodb_status = "no_url"
+                mongodb_error = "MONGODB_URL not configured"
+                
+        except Exception as e:
+            mongodb_status = "failed"
+            mongodb_error = str(e)
+        
+        return {
+            "status": "healthy" if mongodb_status == "connected" else "degraded",
+            "timestamp": datetime.now().isoformat(),
+            "uptime": time.time() - start_time,
+            "mode": "paper_trading",
+            "environment": "railway",
+            "trading_system_initialized": trading_system_initialized,
+            "database": mongodb_status,
+            "database_error": mongodb_error
+        }
+        
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e),
+            "database": "failed"
+        }
 
 @app.get("/status")
 async def trading_status():
