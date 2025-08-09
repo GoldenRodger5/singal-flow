@@ -3,7 +3,7 @@
 nixPkgs = ["python312", "python312Packages.pip", "python312Packages.setuptools", "python312Packages.wheel"]
 
 [phases.install] 
-cmds = ["pip install --upgrade pip setuptools wheel", "pip install --no-cache-dir -r requirements-minimal.txt"]
+cmds = ["pip install --upgrade pip setuptools wheel", "pip install --no-cache-dir -r requirements-railway.txt"]
 
 [start]
 cmd = "cd backend && python railway_start.py"
