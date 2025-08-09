@@ -112,13 +112,28 @@ async def debug_mongodb_connection():
 async def health_check():
     """Health check endpoint for Railway."""
     try:
-        # Test MongoDB connection
+        # Get environment info for debugging
+        import os
+        mongodb_url_exists = bool(os.getenv('MONGODB_URL'))
+        mongodb_url_length = len(os.getenv('MONGODB_URL', ''))
+        
+        # Test MongoDB connection with detailed error reporting
         mongodb_status = "unknown"
         mongodb_error = None
+        connection_details = {
+            "env_var_exists": mongodb_url_exists,
+            "env_var_length": mongodb_url_length
+        }
         
         try:
             from services.config import Config
             config = Config()
+            
+            connection_details.update({
+                "config_url_exists": bool(config.MONGODB_URL),
+                "config_url_length": len(config.MONGODB_URL) if config.MONGODB_URL else 0,
+                "config_db_name": config.MONGODB_NAME
+            })
             
             if config.MONGODB_URL:
                 from pymongo import MongoClient
@@ -128,11 +143,14 @@ async def health_check():
                 client.close()
             else:
                 mongodb_status = "no_url"
-                mongodb_error = "MONGODB_URL not configured"
+                mongodb_error = "MONGODB_URL not configured in Config"
                 
         except Exception as e:
             mongodb_status = "failed"
             mongodb_error = str(e)
+            # Add more details about the specific error
+            connection_details["error_type"] = type(e).__name__
+            connection_details["error_details"] = str(e)
         
         return {
             "status": "healthy" if mongodb_status == "connected" else "degraded",
@@ -142,7 +160,8 @@ async def health_check():
             "environment": "railway",
             "trading_system_initialized": trading_system_initialized,
             "database": mongodb_status,
-            "database_error": mongodb_error
+            "database_error": mongodb_error,
+            "connection_debug": connection_details
         }
         
     except Exception as e:
