@@ -6,10 +6,12 @@ import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add backend to path
 sys.path.append(str(Path(__file__).parent / 'backend'))
 
+@pytest.mark.asyncio
 async def test_api_components():
     """Test all major API components"""
     
