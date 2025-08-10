@@ -29,4 +29,4 @@ ENV PYTHONPATH=/app/backend:/app:$PYTHONPATH
 EXPOSE 8000
 
 # Start the application from the backend directory
-CMD ["python", "backend/railway_test.py"]
+CMD ["python", "backend/minimal_test.py"]
