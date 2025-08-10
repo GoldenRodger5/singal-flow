@@ -1213,21 +1213,51 @@ def get_health_data():
 def initialize_trading_system():
     """Initialize the trading system components in background."""
     try:
-        # Import and initialize trading system
-        from services.config import Config
+        # Import and initialize trading system with graceful error handling
+        try:
+            from services.config import Config
+            config = Config()
+            logger.info("✅ Configuration initialized")
+        except ImportError as e:
+            logger.warning(f"Could not import Config service: {e}")
+            return False
+        except Exception as e:
+            logger.warning(f"Configuration initialization failed: {e}")
+            return False
         
         logger.info("🚀 Initializing Signal Flow Trading System on Railway")
         logger.info(f"📅 Start time: {datetime.now()}")
         logger.info("🔄 Mode: Paper Trading (Safe)")
         
-        # Initialize configuration
-        config = Config()
-        logger.info("✅ Configuration initialized")
+        # Try to initialize other services, but don't fail if they're unavailable
+        try:
+            # Test if we can import other services
+            services_available = []
+            
+            try:
+                from services.alpaca_trading import AlpacaTradingService
+                services_available.append("AlpacaTradingService")
+            except ImportError:
+                logger.warning("AlpacaTradingService not available")
+            
+            try:
+                from services.data_provider import DataProvider
+                services_available.append("DataProvider")
+            except ImportError:
+                logger.warning("DataProvider not available")
+            
+            try:
+                from services.database_manager import DatabaseManager
+                services_available.append("DatabaseManager")
+            except ImportError:
+                logger.warning("DatabaseManager not available")
+            
+            logger.info(f"✅ Available services: {', '.join(services_available) if services_available else 'None (API-only mode)'}")
+            
+        except Exception as e:
+            logger.warning(f"Service initialization check failed: {e}")
         
-        # Import main application components (but don't run the main loop)
-        # This ensures all services are available for API endpoints
         logger.info("✅ Trading system components initialized successfully")
-        
         return True
         
     except Exception as e:

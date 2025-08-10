@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements-test.txt .
+COPY requirements-railway.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements-test.txt
+RUN pip install --no-cache-dir -r requirements-railway.txt
 
 # Copy the entire project
 COPY . .
@@ -28,5 +28,5 @@ ENV PYTHONPATH=/app/backend:/app:$PYTHONPATH
 # Expose port
 EXPOSE 8000
 
-# Start the application from the backend directory
-CMD ["python", "backend/minimal_test.py"]
+# Start the original application
+CMD ["python", "backend/railway_start.py"]
