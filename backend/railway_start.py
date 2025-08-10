@@ -71,15 +71,20 @@ async def debug_mongodb_connection():
     """Debug MongoDB connection issues."""
     try:
         import os
-        from services.config import Config
         
-        config = Config()
+        # Try to import config safely
+        try:
+            from services.config import Config
+            config = Config()
+        except ImportError as e:
+            return {"error": f"Could not import Config service: {e}"}
+        except Exception as e:
+            return {"error": f"Config initialization failed: {e}"}
         
         debug_info = {
-            "mongodb_url_exists": bool(config.MONGODB_URL),
-            "mongodb_url_length": len(config.MONGODB_URL) if config.MONGODB_URL else 0,
-            "mongodb_url_preview": config.MONGODB_URL[:50] + "..." if config.MONGODB_URL and len(config.MONGODB_URL) > 50 else config.MONGODB_URL,
-            "mongodb_name": config.MONGODB_NAME,
+            "mongodb_url_exists": bool(config.MONGODB_URL) if hasattr(config, 'MONGODB_URL') else False,
+            "mongodb_url_length": len(config.MONGODB_URL) if hasattr(config, 'MONGODB_URL') and config.MONGODB_URL else 0,
+            "mongodb_name": getattr(config, 'MONGODB_NAME', 'Not Set'),
             "environment_vars": {
                 "MONGODB_URL": bool(os.getenv('MONGODB_URL')),
                 "MONGODB_NAME": os.getenv('MONGODB_NAME', 'Not Set'),
@@ -91,9 +96,8 @@ async def debug_mongodb_connection():
         # Test actual MongoDB connection
         try:
             from pymongo import MongoClient
-            from urllib.parse import quote_plus
             
-            if config.MONGODB_URL:
+            if hasattr(config, 'MONGODB_URL') and config.MONGODB_URL:
                 client = MongoClient(config.MONGODB_URL, serverSelectionTimeoutMS=5000)
                 # Test the connection
                 client.admin.command('ping')
@@ -245,10 +249,16 @@ async def trading_status():
 async def get_holdings():
     """Get current holdings from the trading system."""
     try:
-        # Import here to avoid circular imports
-        from services.alpaca_trading import AlpacaTradingService
-        
-        trading_service = AlpacaTradingService()
+        # Import here to avoid circular imports - with error handling
+        try:
+            from services.alpaca_trading import AlpacaTradingService
+            trading_service = AlpacaTradingService()
+        except ImportError as e:
+            logger.error(f"AlpacaTradingService not available: {e}")
+            return {"holdings": [], "total_value": 0.0, "error": f"Trading service unavailable: {e}"}
+        except Exception as e:
+            logger.error(f"Error initializing trading service: {e}")
+            return {"holdings": [], "total_value": 0.0, "error": f"Trading service error: {e}"}
         
         # Get positions from Alpaca (paper trading account)
         positions = trading_service.api.list_positions()
@@ -312,7 +322,24 @@ async def get_market_pulse():
         market_status = "open" if 9 <= current_hour <= 16 else "closed"
         
         try:
-            from services.data_provider import DataProvider
+            # Try to import DataProvider safely
+            try:
+                from services.data_provider import DataProvider
+            except ImportError as e:
+                logger.warning(f"DataProvider not available: {e}")
+                # Return basic market status without real data
+                return {
+                    "market_status": market_status,
+                    "timestamp": datetime.now().isoformat(),
+                    "major_indices": {},
+                    "error": f"Data provider unavailable: {e}",
+                    "market_overview": {
+                        "trend": "UNKNOWN",
+                        "volatility": "UNKNOWN",
+                        "volume_profile": "UNKNOWN"
+                    }
+                }
+            
             async with DataProvider() as data_provider:
                 # Get real-time data for major indices
                 indices = ['SPY', 'QQQ', 'IWM']

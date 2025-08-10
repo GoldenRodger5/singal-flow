@@ -1,0 +1,37 @@
+# Production Requirements for Signal Flow Trading System
+# Core API Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+# Database & Data Processing
+pymongo[srv]>=4.0.0
+pandas>=2.0.3
+numpy>=1.24.0
+
+# HTTP Client for APIs
+aiohttp>=3.8.0
+requests>=2.31.0
+
+# Trading APIs
+alpaca-trade-api>=3.0.0
+alpaca-py>=0.8.0
+polygon-api-client>=1.12.0
+
+# AI APIs
+openai>=1.0.0
+anthropic>=0.3.0
+
+# Configuration & Environment
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Utilities & Logging
+loguru>=0.7.0
+pytz>=2023.3
+python-dateutil>=2.8.0
+
+# Build Tools
+setuptools>=68.0.0
+wheel>=0.41.0
