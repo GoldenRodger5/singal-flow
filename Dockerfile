@@ -19,11 +19,14 @@ RUN pip install --no-cache-dir -r requirements-railway.txt
 # Copy the entire project
 COPY . .
 
-# Set the working directory to backend for the start command
-WORKDIR /app/backend
+# Create logs directory
+RUN mkdir -p logs
+
+# Set Python path to include backend directory
+ENV PYTHONPATH=/app/backend:/app:$PYTHONPATH
 
 # Expose port
 EXPOSE 8000
 
-# Start the application
-CMD ["python", "railway_test.py"]
+# Start the application from the backend directory
+CMD ["python", "backend/railway_test.py"]
