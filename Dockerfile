@@ -26,4 +26,4 @@ WORKDIR /app/backend
 EXPOSE 8000
 
 # Start the application
-CMD ["python", "railway_start.py"]
+CMD ["python", "railway_test.py"]
