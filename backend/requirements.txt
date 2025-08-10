@@ -1,71 +1,71 @@
-# Python 3.11 Stable Requirements - Railway Deployment
-# Conservative versions tested for Python 3.11 compatibility
+# Railway Deployment Requirements - LATEST COMPATIBLE VERSIONS
+# No version pins - always use latest compatible versions
 # ================================================================
 
 # Core Web Framework
-fastapi==0.103.2
-uvicorn[standard]==0.23.2
-starlette==0.27.0
-python-multipart==0.0.6
+fastapi
+uvicorn[standard]
+starlette
+python-multipart
 
-# HTTP & Networking
-requests==2.31.0
-urllib3==1.26.18
-aiohttp==3.8.6
-httpx==0.25.0
-websockets==11.0.3
-websocket-client==1.6.4
+# HTTP & Networking 
+requests
+urllib3<2.0.0  # ONLY constraint needed - alpaca-trade-api compatibility
+aiohttp
+httpx
+websockets
+websocket-client
 
 # Database
-pymongo[srv]==4.5.0
-motor==3.3.0
-dnspython==2.4.2
+pymongo[srv]
+motor
+dnspython
 
 # Trading APIs
-alpaca-trade-api==3.1.1
-yfinance==0.2.21
-polygon-api-client==1.12.5
+alpaca-trade-api  # Always latest
+yfinance
+polygon-api-client
 
-# Data Processing (stable versions)
-pandas==2.0.3
-numpy==1.24.4
-scipy==1.10.1
-scikit-learn==1.3.0
+# Data Processing
+pandas
+numpy
+scipy
+scikit-learn
 
 # Configuration & Utilities
-python-dotenv==1.0.0
-pydantic==2.4.2
-pydantic-settings==2.0.3
-loguru==0.7.2
-pytz==2023.3
-python-dateutil==2.8.2
+python-dotenv
+pydantic
+pydantic-settings
+loguru
+pytz
+python-dateutil
 
-# Security (confirmed Python 3.11 compatible)
-cryptography==41.0.7
-passlib==1.7.4
-bcrypt==4.0.1
+# Security
+cryptography
+passlib
+bcrypt
 
 # System Monitoring
-psutil==5.9.6
+psutil
 
 # Data Parsing
-beautifulsoup4==4.12.2
-lxml==4.9.3
-jsonschema==4.19.2
+beautifulsoup4
+lxml
+jsonschema
 
 # Visualization
-plotly==5.16.1
+plotly
 
-# AI Services (conservative versions)
-openai==1.3.8
-anthropic==0.8.1
+# AI Services
+openai
+anthropic
 
 # Text Processing
-textblob==0.17.1
+textblob
 
 # Task Scheduling
-schedule==1.2.0
+schedule
 
 # Build Tools
-setuptools==68.2.2
-wheel==0.41.3
+setuptools
+wheel
