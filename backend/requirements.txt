@@ -1,49 +1,49 @@
-# Fixed Production Requirements - Railway Deployment
-# All versions tested for compatibility - NO CONFLICTS
+# Python 3.11 Stable Requirements - Railway Deployment
+# Conservative versions tested for Python 3.11 compatibility
 # ================================================================
 
-# Core Web Framework (exact versions)
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+# Core Web Framework
+fastapi==0.103.2
+uvicorn[standard]==0.23.2
 starlette==0.27.0
 python-multipart==0.0.6
 
-# HTTP & Networking (compatible versions)
+# HTTP & Networking
 requests==2.31.0
 urllib3==1.26.18
-aiohttp==3.9.1
-httpx==0.25.2
-websockets==12.0
-websocket-client==1.7.0
+aiohttp==3.8.6
+httpx==0.25.0
+websockets==11.0.3
+websocket-client==1.6.4
 
 # Database
-pymongo[srv]==4.6.0
-motor==3.3.2
+pymongo[srv]==4.5.0
+motor==3.3.0
 dnspython==2.4.2
 
-# Trading APIs (tested versions)
+# Trading APIs
 alpaca-trade-api==3.1.1
-yfinance==0.2.28
-polygon-api-client==1.13.2
+yfinance==0.2.21
+polygon-api-client==1.12.5
 
-# Data Processing (compatible matrix)
+# Data Processing (stable versions)
 pandas==2.0.3
 numpy==1.24.4
-scipy==1.11.4
-scikit-learn==1.3.2
+scipy==1.10.1
+scikit-learn==1.3.0
 
 # Configuration & Utilities
 python-dotenv==1.0.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+pydantic==2.4.2
+pydantic-settings==2.0.3
 loguru==0.7.2
 pytz==2023.3
 python-dateutil==2.8.2
 
-# Security
-cryptography==41.0.8
+# Security (confirmed Python 3.11 compatible)
+cryptography==41.0.7
 passlib==1.7.4
-bcrypt==4.1.2
+bcrypt==4.0.1
 
 # System Monitoring
 psutil==5.9.6
@@ -51,14 +51,14 @@ psutil==5.9.6
 # Data Parsing
 beautifulsoup4==4.12.2
 lxml==4.9.3
-jsonschema==4.20.0
+jsonschema==4.19.2
 
-# Visualization (essential only)
-plotly==5.17.0
+# Visualization
+plotly==5.16.1
 
-# AI Services (stable versions)
-openai==1.52.2
-anthropic==0.31.2
+# AI Services (conservative versions)
+openai==1.3.8
+anthropic==0.8.1
 
 # Text Processing
 textblob==0.17.1
@@ -66,12 +66,6 @@ textblob==0.17.1
 # Task Scheduling
 schedule==1.2.0
 
-# Build Tools (exact versions)
-setuptools==69.0.3
-wheel==0.42.0
-
-# Technical Analysis (optional - can add back later if needed)
-# pandas-ta==0.3.14b0
-
-# Optional visualization (can add back if needed)
-# matplotlib==3.8.2
+# Build Tools
+setuptools==68.2.2
+wheel==0.41.3
