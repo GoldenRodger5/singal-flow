@@ -36,10 +36,10 @@ cache/
 .cache/
 .pytest_cache/
 
-# Data files (not needed in production)
-data/
+# Data files (not needed in production) — anchor to root only so
+# helios/data/ (the source code) is INCLUDED.
+/data/
 *.csv
-*.json
 *.parquet
 
 # Documentation

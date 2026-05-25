@@ -97,8 +97,8 @@ temp/
 config.json
 secrets.json
 
-# Data files
-data/
+# Data files — anchor to root so /data is ignored but helios/data is NOT
+/data/
 backtest_results/
 performance_data/
 
