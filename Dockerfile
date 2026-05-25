@@ -27,7 +27,10 @@ RUN pip install --no-cache-dir \
     "polars>=1.0" \
     "duckdb>=1.0" \
     "pyarrow>=16" \
-    "python-dotenv>=1.0"
+    "python-dotenv>=1.0" \
+    "websockets>=12" \
+    "solders>=0.21" \
+    "base58>=2.1"
 
 # Copy only what the A2 collector needs (excludes legacy backend, frontend, etc.)
 COPY helios /app/helios
