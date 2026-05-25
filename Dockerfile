@@ -1,45 +1,47 @@
-# Production Dockerfile for Signal Flow Trading System - OPTIMIZED
-FROM python:3.11-slim
+# Helios A2 continuous collector — runs the shadow-mode loop 24/7 in the cloud.
+#
+# Minimal dependencies — only what scripts.a2_run_continuous + its imports need.
+# (Does NOT install xgboost / scipy / sklearn / fastapi — those are for other
+# strategies and would slow the build by minutes for no runtime benefit.)
 
-# Set working directory
+FROM python:3.12-slim
+
 WORKDIR /app
 
-# Install essential system dependencies only
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    make \
-    build-essential \
-    curl \
-    pkg-config \
-    libffi-dev \
-    libssl-dev \
+# Build deps for native wheels (polars, duckdb, pyarrow, numpy)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better Docker layer caching
-COPY requirements-production.txt .
+RUN pip install --no-cache-dir --upgrade pip
 
-# Install Python dependencies with optimization
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir -r requirements-production.txt --timeout 1000
+# Pin runtime deps — keep this list tight. Install pyarrow first since it's the
+# slowest wheel; failing fast helps debug.
+RUN pip install --no-cache-dir \
+    "pydantic>=2.7" \
+    "loguru>=0.7" \
+    "anyio>=4.4" \
+    "httpx>=0.27" \
+    "orjson>=3.10" \
+    "numpy>=1.26" \
+    "polars>=1.0" \
+    "duckdb>=1.0" \
+    "pyarrow>=16" \
+    "python-dotenv>=1.0"
 
-# Copy the entire project
-COPY . .
+# Copy only what the A2 collector needs (excludes legacy backend, frontend, etc.)
+COPY helios /app/helios
+COPY scripts /app/scripts
+COPY pyproject.toml /app/
 
-# Create necessary directories
-RUN mkdir -p logs backend/logs cache data
-
-# Set environment variables
-ENV PYTHONPATH=/app/backend:/app:$PYTHONPATH
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
-# Expose port
-EXPOSE 8000
+# Logs go to /data/logs so a Railway volume mounted at /data persists them.
+RUN mkdir -p /data/logs && ln -s /data/logs /app/logs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
+# Smoke-check the import path on build so we fail fast if Python pathing is wrong.
+RUN python -c "from helios.strategies.a2_meme_snipe.enricher import SnapshotEnricher; print('helios imports OK')"
 
-# Start the application
-CMD ["python", "backend/railway_start.py"]
+CMD ["python", "-m", "scripts.a2_run_continuous"]
