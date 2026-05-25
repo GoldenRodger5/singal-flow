@@ -21,8 +21,13 @@ from typing import Any, Iterable
 
 from helios.strategies.a2_meme_snipe.snapshot import TokenSnapshot
 
-SHADOW_LOG_DEFAULT = Path("logs/a2_shadow.jsonl")
-OUTCOMES_LOG_DEFAULT = Path("logs/a2_outcomes.jsonl")
+# Default log paths. In Railway with a /data volume mount, HELIOS_LOGS_DIR
+# should be set to /data/logs (set automatically in the Dockerfile). Locally
+# (no env var) defaults to ./logs for tests and dev.
+import os as _os
+_LOGS_DIR = _os.getenv("HELIOS_LOGS_DIR", "logs")
+SHADOW_LOG_DEFAULT = Path(_LOGS_DIR) / "a2_shadow.jsonl"
+OUTCOMES_LOG_DEFAULT = Path(_LOGS_DIR) / "a2_outcomes.jsonl"
 
 
 def _json_default(o: Any) -> Any:
@@ -36,7 +41,13 @@ def _json_default(o: Any) -> Any:
 
 
 def _ensure_dir(path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    parent = path.parent
+    # Follow dangling symlinks (e.g. /app/logs -> /data/logs after volume mount)
+    target = parent.resolve() if parent.is_symlink() else parent
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        pass
 
 
 def write_observation(

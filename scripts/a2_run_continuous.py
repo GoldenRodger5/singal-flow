@@ -60,7 +60,7 @@ from helios.strategies.a2_meme_snipe.log import (
 load_dotenv()
 log = get_logger("a2_continuous")
 
-STATUS_PATH = Path("logs/a2_status.json")
+STATUS_PATH = Path(os.getenv("HELIOS_LOGS_DIR", "logs")) / "a2_status.json"
 
 # Global stop flag — set by signal handler; checked by loop & interruptible sleep
 _STOP = False
@@ -68,7 +68,12 @@ _STOP = False
 
 def _write_status(state: dict) -> None:
     """Atomic-ish write of a status snapshot — readable any time with `cat logs/a2_status.json`."""
-    STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    parent = STATUS_PATH.parent
+    target = parent.resolve() if parent.is_symlink() else parent
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        pass
     tmp = STATUS_PATH.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(state, indent=2, default=str))
     tmp.replace(STATUS_PATH)

@@ -39,7 +39,13 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
 
 # Logs go to /data/logs so a Railway volume mounted at /data persists them.
-RUN mkdir -p /data/logs && ln -s /data/logs /app/logs
+# IMPORTANT: do NOT symlink /app/logs -> /data/logs. The runtime volume mount
+# replaces the build-time /data, leaving any symlink dangling, which causes
+# Python's mkdir(exist_ok=True) to raise FileExistsError. Instead, point the
+# code at the absolute path via env vars.
+ENV HELIOS_LOGS_DIR=/data/logs
+ENV HELIOS_LOG_JSON=/data/logs/helios.jsonl
+RUN mkdir -p /data/logs
 
 # Smoke-check the import path on build so we fail fast if Python pathing is wrong.
 RUN python -c "from helios.strategies.a2_meme_snipe.enricher import SnapshotEnricher; print('helios imports OK')"

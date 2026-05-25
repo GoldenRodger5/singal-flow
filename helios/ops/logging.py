@@ -43,7 +43,16 @@ def configure_logging(
         json_path = os.getenv("HELIOS_LOG_JSON", "logs/helios.jsonl")
     if json_path:
         p = Path(json_path)
-        p.parent.mkdir(parents=True, exist_ok=True)
+        # Defensive: if parent is a dangling symlink (e.g. after Railway volume
+        # remount), the symlink target may not exist and mkdir(exist_ok=True)
+        # cannot recover because the path is a symlink not a directory.
+        # Resolve the symlink target and mkdir THAT, then proceed.
+        target = p.parent.resolve() if p.parent.is_symlink() else p.parent
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except FileExistsError:
+            # Symlink whose target dir we just created — fine.
+            pass
         _logger.add(
             p,
             level="DEBUG",
