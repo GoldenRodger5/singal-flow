@@ -47,6 +47,7 @@ import httpx
 from dotenv import load_dotenv
 
 from helios.ops import configure_logging, get_logger
+from helios.ops.backup import backup_to_github
 from helios.strategies.a2_meme_snipe import RugFilter
 from helios.strategies.a2_meme_snipe.enricher import SnapshotEnricher
 from helios.strategies.a2_meme_snipe.harvester import harvest
@@ -152,6 +153,8 @@ async def main() -> int:
                         help="Stop after N shadow iterations (default: unlimited)")
     parser.add_argument("--no-relax-p02", action="store_true",
                         help="Enforce P02 (dev_history_unknown) strictly. Default: relax for data collection.")
+    parser.add_argument("--backup-interval-hours", type=float, default=6.0,
+                        help="Hours between GitHub backup pushes (default 6; needs GITHUB_TOKEN + GITHUB_REPO env vars)")
     args = parser.parse_args()
 
     configure_logging(level="WARNING")  # noisy adapter logs go to JSON sink; stdout stays clean
@@ -167,6 +170,7 @@ async def main() -> int:
     iteration = 0
     last_harvest = 0.0
     last_summary = 0.0
+    last_backup = 0.0
     started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     def update_status(stage: str, **extra) -> None:
@@ -225,6 +229,18 @@ async def main() -> int:
                     log.exception("harvest_failed", error=str(e))
                     print(f"[{iso}] HARVEST FAILED: {e}", flush=True)
                 last_harvest = now
+
+            # Periodic GitHub backup of JSONL files (fire-and-forget).
+            # Skipped silently if GITHUB_TOKEN/GITHUB_REPO env vars aren't set.
+            if now - last_backup > args.backup_interval_hours * 3600:
+                async def _do_backup(t=iso):
+                    try:
+                        ok = await backup_to_github()
+                        print(f"[{t}] backup -> github  {'ok' if ok else 'skipped/failed'}", flush=True)
+                    except Exception as e:  # noqa: BLE001
+                        log.exception("backup_failed", error=str(e))
+                asyncio.create_task(_do_backup())
+                last_backup = now
 
             if now - last_summary > args.summary_interval_hours * 3600:
                 try:
