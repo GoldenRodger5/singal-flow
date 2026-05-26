@@ -112,6 +112,7 @@ async def run_one_shadow(
     rug: RugFilter,
     limit: int,
     relax_p02: bool,
+    llm_scorer=None,  # optional LLMTokenScorer; if provided, each obs gets a score
 ) -> tuple[int, int, int]:
     """One shadow batch. Returns (n_pass, n_reject, n_enrich_failed)."""
     try:
@@ -137,7 +138,23 @@ async def run_one_shadow(
         if relax_p02 and not snap.dev_history_known:
             snap = replace(snap, dev_history_known=True, dev_rug_history_count=0)
         report = rug.check(snap)
-        write_observation(snap, report.decision.value, list(report.reasons))
+
+        # Optional LLM enrichment — runs alongside the filter, doesn't gate it
+        extras: dict | None = None
+        if llm_scorer is not None:
+            try:
+                features = await llm_scorer.score(snap.mint_address, snap.name, snap.symbol)
+                if features is not None:
+                    extras = {"llm": {
+                        "legit_score": features.legit_score,
+                        "theme": features.theme,
+                        "name_quality": features.name_quality,
+                        "sentiment_emoji": features.sentiment_emoji,
+                        "coordination_signal": features.coordination_signal,
+                    }}
+            except Exception as e:  # noqa: BLE001
+                log.warning("llm_score_failed", mint=mint, error=str(e))
+        write_observation(snap, report.decision.value, list(report.reasons), extras=extras)
         if report.passed:
             n_pass += 1
         else:
@@ -172,6 +189,13 @@ async def main() -> int:
 
     enricher = SnapshotEnricher()
     rug = RugFilter()
+
+    # Optional LLM scoring: enabled iff ANTHROPIC_API_KEY is set.
+    llm_scorer = None
+    if os.getenv("ANTHROPIC_API_KEY"):
+        from helios.features.llm import LLMTokenScorer
+        llm_scorer = LLMTokenScorer()
+        print("[continuous] LLM token scoring enabled (Claude Sonnet)", flush=True)
 
     iteration = 0
     last_harvest = 0.0
@@ -209,6 +233,7 @@ async def main() -> int:
                     enricher, rug,
                     args.shadow_limit,
                     relax_p02=not args.no_relax_p02,
+                    llm_scorer=llm_scorer,
                 )
                 total_obs = len(list(read_observations()))
                 dt = time.time() - iter_start

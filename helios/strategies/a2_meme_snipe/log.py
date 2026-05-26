@@ -55,8 +55,14 @@ def write_observation(
     filter_decision: str,
     filter_reasons: list[str],
     path: Path = SHADOW_LOG_DEFAULT,
+    extras: dict | None = None,
 ) -> str:
-    """Append one observation to the shadow log. Returns the generated obs_id."""
+    """Append one observation to the shadow log. Returns the generated obs_id.
+
+    `extras`: optional dict merged into the record at write time. Used to attach
+    LLM features, secondary scoring, etc. without touching the TokenSnapshot
+    dataclass.
+    """
     _ensure_dir(path)
     obs_id = str(uuid.uuid4())
     record = {
@@ -67,6 +73,8 @@ def write_observation(
         "filter_reasons": list(filter_reasons),
         "snapshot": snap,  # _json_default handles dataclass + Decimal
     }
+    if extras:
+        record["extras"] = extras
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, default=_json_default) + "\n")
     return obs_id

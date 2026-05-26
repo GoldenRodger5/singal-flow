@@ -92,6 +92,30 @@ def _build_tasks(args) -> list[SupervisedTask]:
             await A5ShadowRunner().run()
         tasks.append(SupervisedTask(name="a5_shadow", factory=a5_factory))
 
+    # ---- A3 outcome harvester (measures realized R for past cascade signals) ----
+    if not args.disable_a3:
+        from helios.strategies.a3_liq_hunt.harvester import harvest_loop as a3_harvest_loop
+
+        async def a3_harvest_factory():
+            await a3_harvest_loop(interval_minutes=60.0)
+        tasks.append(SupervisedTask(name="a3_harvest", factory=a3_harvest_factory))
+
+    # ---- A5 outcome harvester (resolves ticker→mint, fetches OHLCV, sims P&L) ----
+    if not args.disable_a5:
+        from helios.strategies.a5_sentiment.harvester import harvest_loop as a5_harvest_loop
+
+        async def a5_harvest_factory():
+            await a5_harvest_loop(interval_minutes=60.0)
+        tasks.append(SupervisedTask(name="a5_harvest", factory=a5_harvest_factory))
+
+    # ---- A2 token re-snapshot trail (hourly resnap of last-24h tokens) ----
+    if not args.disable_a2_shadow:
+        from helios.strategies.a2_meme_snipe.resnap_trail import resnap_loop
+
+        async def resnap_factory():
+            await resnap_loop(interval_minutes=60.0)
+        tasks.append(SupervisedTask(name="a2_resnap", factory=resnap_factory))
+
     return tasks
 
 
