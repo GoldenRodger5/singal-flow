@@ -18,7 +18,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from helios.data.adapters.birdeye import BirdeyeAdapter
+from helios.data.adapters.geckoterminal import GeckoTerminalAdapter
 from helios.ops import configure_logging, get_logger
 from helios.strategies.a2_meme_snipe.exit_research import (
     evaluate_policies,
@@ -50,7 +50,7 @@ async def main() -> int:
         print("No tokens — nothing to research.")
         return 1
 
-    birdeye = BirdeyeAdapter()
+    birdeye = GeckoTerminalAdapter()
     token_candles: list[tuple[float, list[Candle]]] = []
     fetched, failed = 0, 0
     try:
