@@ -25,7 +25,7 @@ methodology working, not failing.
 | **A2** memecoin sniping | Buy DexScreener-trending Solana launches | ❌ DEAD | Best exit (target3x/stop50) +2.9% at 0% slippage, −15.8% at 10%/leg. 81% of tokens finish negative |
 | **A8** cash-and-carry | Long spot / short perp, harvest funding | ❌ FLAT (regime) | −0.36% APY; funding never exceeded 50% APY in the window. Pays only in high-funding frenzies |
 | **Momentum** (x-sectional) | Long winners / short losers, 15-perp basket | ❌ DEAD | Negative in EVERY config; some Sharpe −10 |
-| **Reversal** (x-sectional) | Long losers / short winners, market-neutral | ⚠️ WEAK/UNSTABLE | Best 48h/24h Sharpe +2.02 in-sample, but 1 survivor of 15 OOS tests; configs flip sign across the split |
+| **Reversal** (x-sectional) | Long losers / short winners, market-neutral | ❌ DEAD (under honest validation) | Fixed 48h/24h looked great (rolling OOS Sharpe +2.10, DSR 1.0 @ n_trials=1) BUT Deflated Sharpe collapses to **0.42** (n=15 trials) / **0.24** (n=40) — multiple-testing artifact. Adaptive re-tuning (look-ahead-free) = **−0.18 Sharpe, −43%**. |
 | **Funding reversion** | Fade funding-rate extremes | ⚠️ FAINT | Best +0.47%/signal (12h hold, z≥3.0, 53% win) — too small after real slippage |
 
 ---
