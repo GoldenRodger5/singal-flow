@@ -25,7 +25,7 @@ from typing import Optional
 
 import httpx
 
-from helios.data.adapters.birdeye import BirdeyeAdapter
+from helios.data.adapters.geckoterminal import GeckoTerminalAdapter
 from helios.ops import get_logger
 
 log = get_logger(__name__)
@@ -189,7 +189,7 @@ def _simulate(candles: list[dict], entry_price: float) -> SentimentOutcome | Non
 async def harvest_a5(
     shadow_path: Path = A5_SHADOW_PATH,
     outcomes_path: Path = A5_OUTCOMES_PATH,
-    birdeye: Optional[BirdeyeAdapter] = None,
+    birdeye: Optional[GeckoTerminalAdapter] = None,
     window_hours: int = OUTCOME_WINDOW_HOURS,
 ) -> dict[str, int]:
     if not shadow_path.exists():
@@ -197,7 +197,7 @@ async def harvest_a5(
                 "skipped_no_mint": 0, "failed": 0}
 
     own_birdeye = birdeye is None
-    birdeye = birdeye or BirdeyeAdapter()
+    birdeye = birdeye or GeckoTerminalAdapter()
     cache = _TickerCache()
     seen = _read_existing(outcomes_path)
     counts = {"processed": 0, "skipped_recent": 0, "skipped_done": 0,

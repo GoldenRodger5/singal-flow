@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from helios.data.adapters.birdeye import BirdeyeAdapter
+from helios.data.adapters.geckoterminal import GeckoTerminalAdapter
 from helios.ops import get_logger
 from helios.strategies.a2_meme_snipe.log import (
     OUTCOMES_LOG_DEFAULT,
@@ -45,13 +45,13 @@ WINDOWS = {"1h": 3600, "4h": 14400, "24h": 86400}
 async def harvest(
     shadow_path: Path = SHADOW_LOG_DEFAULT,
     outcomes_path: Path = OUTCOMES_LOG_DEFAULT,
-    birdeye: BirdeyeAdapter | None = None,
+    birdeye: GeckoTerminalAdapter | None = None,
     request_sleep_seconds: float = 1.1,
 ) -> dict[str, int]:
     """Walk observations; for each one whose largest window is matured, fetch
     OHLCV and write an outcome record. Returns counts of processed/skipped."""
     own = birdeye is None
-    birdeye = birdeye or BirdeyeAdapter()
+    birdeye = birdeye or GeckoTerminalAdapter()
     counts = {"processed": 0, "skipped_recent": 0, "skipped_done": 0, "failed": 0}
     seen = harvested_obs_ids(outcomes_path)
     now = datetime.now(timezone.utc).timestamp()

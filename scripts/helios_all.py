@@ -63,7 +63,7 @@ def _build_tasks(args) -> list[SupervisedTask]:
         tasks.append(SupervisedTask(name="a2_shadow", factory=a2_shadow_factory))
 
     # ---- A2 live (Helius WS new-pool detector, paper-mode by default) ----
-    if not args.disable_a2_live:
+    if args.enable_a2_live:
         from helios.strategies.a2_meme_snipe.live_runner import (
             A2LiveRunner, LiveRunnerConfig,
         )
@@ -136,7 +136,10 @@ def _install_signal_handlers(loop: asyncio.AbstractEventLoop) -> None:
 async def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--disable-a2-shadow", action="store_true")
-    parser.add_argument("--disable-a2-live", action="store_true")
+    # A2-live is OFF by default: Helius Atlas WS is a paid feature (403 on free
+    # tier → crash loop), and the DexScreener-poller fallback is redundant with
+    # a2_shadow. Opt in with --enable-a2-live only when a paid WS is available.
+    parser.add_argument("--enable-a2-live", action="store_true")
     parser.add_argument("--disable-a3", action="store_true")
     parser.add_argument("--disable-a5", action="store_true")
     # A2 live params (paper-mode defaults)
@@ -150,7 +153,7 @@ async def main() -> int:
     print("=" * 70)
     print("Helios unified runner — all enabled strategies in one process")
     print(f"  A2 shadow:  {'OFF' if args.disable_a2_shadow else 'ON'}")
-    print(f"  A2 live:    {'OFF' if args.disable_a2_live else 'ON (paper-mode)'}")
+    print(f"  A2 live:    {'ON (paper-mode)' if args.enable_a2_live else 'OFF (paid Helius WS needed)'}")
     print(f"  A3 shadow:  {'OFF' if args.disable_a3 else 'ON'}")
     print(f"  A5 shadow:  {'OFF' if args.disable_a5 else 'ON'}")
     print(f"  Live safety: {'LIVE TRADES ENABLED' if os.getenv('SAFETY_LIVE_TRADING') == 'I_UNDERSTAND_THE_RISK' else 'paper-mode (default)'}")
